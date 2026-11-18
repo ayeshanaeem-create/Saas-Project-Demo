@@ -33,6 +33,36 @@ export function formatInZone(instant: Date, timeZone: string, pattern: string): 
   return format(new TZDate(instant, timeZone), pattern);
 }
 
+/** Whole calendar days from one "YYYY-MM-DD" date to another (negative if `to` is earlier). */
+export function daysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = parseIsoDate(from);
+  const [ty, tm, td] = parseIsoDate(to);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+}
+
+/** "2:05 PM": the time shown inside a chat bubble. */
+export function formatMessageTime(instant: Date, timeZone: string): string {
+  return formatInZone(instant, timeZone, "h:mm a");
+}
+
+/** Date separator in a chat: "Today", "Yesterday", "Monday" (this week) or "12 November 2026". */
+export function formatChatDay(instant: Date, timeZone: string, now: Date): string {
+  const days = daysBetween(todayInZone(timeZone, instant), todayInZone(timeZone, now));
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days > 1 && days < 7) return formatInZone(instant, timeZone, "EEEE");
+  return formatInZone(instant, timeZone, "d MMMM yyyy");
+}
+
+/** Time column in the chat list: "2:05 PM", "Yesterday", "Monday" or "12/11/2026". */
+export function formatChatListTime(instant: Date, timeZone: string, now: Date): string {
+  const days = daysBetween(todayInZone(timeZone, instant), todayInZone(timeZone, now));
+  if (days === 0) return formatMessageTime(instant, timeZone);
+  if (days === 1) return "Yesterday";
+  if (days > 1 && days < 7) return formatInZone(instant, timeZone, "EEEE");
+  return formatInZone(instant, timeZone, "dd/MM/yyyy");
+}
+
 /** "HH:mm" → minutes after midnight. */
 export function clockToMinutes(clockTime: string): number {
   const [hh, mm] = parseClockTime(clockTime);

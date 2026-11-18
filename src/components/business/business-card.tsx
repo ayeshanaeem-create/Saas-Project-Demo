@@ -1,6 +1,8 @@
-import { Bot, CalendarCheck, Clock, MapPin } from "lucide-react";
+import { Bot, CalendarCheck, Clock, MapPin, MessageCircle } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { BusinessSummary } from "@/lib/businesses";
@@ -83,9 +85,19 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         </ul>
       </CardContent>
 
-      <CardFooter className="gap-2 text-muted-foreground">
-        <MapPin className="size-4 shrink-0" aria-hidden />
-        <span className="truncate">{business.address}</span>
+      <CardFooter className="justify-between gap-3 text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-2">
+          <MapPin className="size-4 shrink-0" aria-hidden />
+          <span className="truncate">{business.address}</span>
+        </span>
+        <Link
+          href={`/simulator/${business.slug}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+          aria-label={`Chat with ${business.name}`}
+        >
+          <MessageCircle aria-hidden />
+          Chat
+        </Link>
       </CardFooter>
     </Card>
   );

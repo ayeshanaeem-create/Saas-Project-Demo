@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   clockToMinutes,
+  daysBetween,
+  formatChatDay,
+  formatChatListTime,
   formatClockTime,
   formatInZone,
+  formatMessageTime,
   todayInZone,
   weekdayOf,
   zonedDateTime,
@@ -65,5 +69,38 @@ describe("clock helpers", () => {
     expect(formatClockTime("00:15")).toBe("12:15 AM");
     expect(formatClockTime("12:00")).toBe("12:00 PM");
     expect(formatClockTime("21:30")).toBe("9:30 PM");
+  });
+});
+
+describe("daysBetween", () => {
+  it("counts calendar days in either direction", () => {
+    expect(daysBetween("2026-11-18", "2026-11-18")).toBe(0);
+    expect(daysBetween("2026-11-17", "2026-11-18")).toBe(1);
+    expect(daysBetween("2026-12-31", "2027-01-02")).toBe(2);
+    expect(daysBetween("2026-11-18", "2026-11-11")).toBe(-7);
+  });
+});
+
+describe("chat time labels", () => {
+  // Wednesday 18 Nov 2026, 3 PM in Karachi.
+  const now = zonedDateTime("2026-11-18", "15:00", KARACHI);
+  const at = (date: string, time: string) => zonedDateTime(date, time, KARACHI);
+
+  it("formats bubble times in the given timezone", () => {
+    expect(formatMessageTime(at("2026-11-18", "14:05"), KARACHI)).toBe("2:05 PM");
+  });
+
+  it("labels chat days relative to now", () => {
+    expect(formatChatDay(at("2026-11-18", "00:30"), KARACHI, now)).toBe("Today");
+    expect(formatChatDay(at("2026-11-17", "23:59"), KARACHI, now)).toBe("Yesterday");
+    expect(formatChatDay(at("2026-11-16", "10:00"), KARACHI, now)).toBe("Monday");
+    expect(formatChatDay(at("2026-11-10", "10:00"), KARACHI, now)).toBe("10 November 2026");
+  });
+
+  it("formats the chat-list time column", () => {
+    expect(formatChatListTime(at("2026-11-18", "09:15"), KARACHI, now)).toBe("9:15 AM");
+    expect(formatChatListTime(at("2026-11-17", "09:15"), KARACHI, now)).toBe("Yesterday");
+    expect(formatChatListTime(at("2026-11-14", "09:15"), KARACHI, now)).toBe("Saturday");
+    expect(formatChatListTime(at("2026-11-01", "09:15"), KARACHI, now)).toBe("01/11/2026");
   });
 });

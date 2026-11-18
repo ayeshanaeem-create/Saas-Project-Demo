@@ -11,7 +11,8 @@ This repo is a **demo build**. It does **not** connect to the real WhatsApp Busi
 The build runs in phases, and each phase is agreed in conversation before it starts. Update this section as phases land.
 
 - **Phase 1 (scaffold and data): done.** Next.js app, Prisma schema and first migration, seed data for the four businesses, timezone helpers with tests, and a temporary home page listing the businesses from the database.
-- Next: Phase 2, the WhatsApp simulator UI with placeholder replies.
+- **Phase 2 (WhatsApp simulator UI): done.** `/simulator` (chat list) and `/simulator/[slug]` (chat) in a phone frame, with ticks, a typing indicator, unread badges, search, WhatsApp text formatting, and light and dark mode. Replies come from `src/lib/simulator/placeholder-replies.ts`, and chat state lives only in the browser.
+- Next: Phase 3, the booking engine.
 
 ## Product vision
 
@@ -90,19 +91,25 @@ src/
     page.tsx                  # temporary business list; replaced by the landing page in Phase 7
     (marketing)/page.tsx      # † BookMate AI landing page
     demo/[slug]/page.tsx      # † split view: phone simulator + live dashboard
-    simulator/                # † full-screen phone: chat list → chat → call
+    simulator/
+      layout.tsx              # phone shell + SimulatorProvider (chat state survives navigation)
+      page.tsx                # chat list
+      [slug]/page.tsx         # one chat (own <Suspense> around params)
+      not-found.tsx
     dashboard/[slug]/         # †
       page.tsx                # overview: today's bookings, stats
       bookings/ conversations/ services/ agent/
       actions.ts              # Server Actions for dashboard mutations
     api/agent/chat/route.ts   # † streaming agent endpoint
     layout.tsx
-    globals.css               # shadcn theme tokens (wa-* colors arrive in Phase 2)
+    globals.css               # shadcn tokens + wa-* simulator tokens + wa-chat-wallpaper utility
   components/
     ui/                       # shadcn-generated; add via the shadcn CLI
     business/                 # business-card.tsx
-    whatsapp/                 # † phone-frame, chat-list, chat-header, message-bubble,
-                              #   composer, typing-indicator, call-screen
+    whatsapp/                 # simulator-provider (state), simulator-shell (phone frame + theme
+                              #   toggle), status-bar, chat-list, chat-screen, chat-header,
+                              #   message-list, message-bubble, message-status (ticks), composer,
+                              #   formatted-text, business-avatar, chat-skeleton; † call-screen
     dashboard/                # †
     marketing/                # †
   lib/
@@ -110,7 +117,11 @@ src/
     businesses.ts             # business queries (server-only)
     time.ts                   # all timezone math (+ time.test.ts)
     format.ts                 # price and duration formatting
+    whatsapp-format.ts        # *bold* _italic_ ~strike~ ```mono``` parser (+ test)
     utils.ts                  # shadcn's cn()
+    simulator/
+      constants.ts            # SIMULATOR_TIMEZONE (the phone's clock)
+      placeholder-replies.ts  # Phase 2 stand-in replies (+ test); delete in Phase 4
     agent/                    # †
       config.ts               # Anthropic client, model, effort
       system-prompt.ts        # builds the persona prompt from a Business record
@@ -122,15 +133,22 @@ src/
     voice/                    # †
       recognition.ts          # SpeechRecognition wrapper
       synthesis.ts            # speechSynthesis wrapper with a sentence queue
-  hooks/                      # † use-agent-chat.ts, use-voice-call.ts
+  hooks/
+    use-now.ts                # hydration-safe clock (useNow / useClientNow)
+                              # † use-voice-call.ts
   types/
     domain.ts                 # zod enums for the String status/category columns
+    simulator.ts              # SimulatorBusiness, ChatMessage, MessageStatus
 .env                          # DATABASE_URL (not committed)
 .env.example
 vitest.config.mts
 ```
 
 ## Architecture
+
+### Simulator state (Phase 2)
+
+`SimulatorProvider` (in the `/simulator` layout) holds one conversation per business: messages, pending replies (which drive "typing…") and the unread count. `send(slug, text)` runs the delivery timeline: sending → sent → delivered → read with typing → reply. Each business's greeting is the first message in its chat. It is UI-only, so in Phase 4 it must not be sent to the model as history. All simulator times use `SIMULATOR_TIMEZONE`. Phase 4 replaces the placeholder timeline in `send` with the agent endpoint below and loads history from the DB.
 
 ### Chat flow
 
@@ -179,13 +197,17 @@ vitest.config.mts
 - **Server vs client:** Server Components by default. Add `"use client"` only on interactive leaf components. Any file that imports Prisma or the Anthropic SDK also imports `"server-only"`.
 - **Data access:** reads happen in Server Components. Dashboard mutations go through Server Actions. The streaming agent endpoint is the only route handler. App code imports `db` from `@/lib/db`; types come from `@/generated/prisma/client`. The seed script builds its own client, because `server-only` modules can't load outside Next.js.
 - **Cache Components:** bookings and conversations change constantly, so never wrap them in `"use cache"`. Put each live read in an async component inside `<Suspense>` with a fallback, and call `await connection()` (from `next/server`) before the query. `src/app/page.tsx` shows the pattern. Without it, `next build` fails or bakes stale data into the page. After a mutation, refresh with the revalidation APIs described in the bundled Next.js docs.
+- **Suspense per page:** a layout's `<Suspense>` covers page loads but not client navigation below that layout. A page that awaits `params`/`searchParams` or reads live data needs its own `<Suspense>` with a fallback shaped like the page, as in `src/app/simulator/[slug]/page.tsx`. In dev, Next.js logs an "instant navigation" error in the browser console when one is missing.
 - **Route params:** `params` and `searchParams` are Promises and must be awaited. Type pages and layouts with the global `PageProps<"/route">` / `LayoutProps<"/route">` helpers.
+- **Hidden previous pages:** Next.js keeps the previous page mounted but hidden after a client navigation, so going back restores it. Effects still clean up when a page is hidden. In browser tests, scope queries to the visible screen (e.g. `getByRole("log")`), because a hidden page's text is still in the DOM.
+- **Time in client components:** never call `new Date()` / `Date.now()` during render, since it causes hydration mismatches and Cache Components errors. Use `useNow(serverNow)` from `src/hooks/use-now.ts`, or `useClientNow()` for UI in the static shell.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.
 - **Naming:** files are kebab-case (`message-bubble.tsx`), components PascalCase, hooks `use-*.ts`.
 - **shadcn:** `src/components/ui/` is generated. Add components with the shadcn CLI and only edit them for theming.
-- **WhatsApp look:** built from Tailwind theme tokens (`wa-*` in `globals.css`) with light and dark variants, never hard-coded hex in components. Use our own lucide icons. Don't ship WhatsApp or Meta logos.
+- **WhatsApp look:** built from Tailwind theme tokens (`wa-*` in `globals.css`, e.g. `bg-wa-bubble-out`, `text-wa-meta`) with light and dark variants, never hard-coded hex in components. Use our own lucide icons. Don't ship WhatsApp or Meta logos. The simulator's dark mode toggles a `dark` class on the phone wrapper only, not on the whole page.
+- **Message formatting:** agent replies use WhatsApp syntax (`*bold*`, `_italic_`, `~strike~`), never Markdown. Render text through `FormattedText`, and strip it for previews with `stripWhatsAppFormatting`.
 - **Tests:** pure logic (slot generation, availability, timezone helpers) gets Vitest tests. UI is verified by running the app.
 - **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds secrets (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) and is read only by Next.js. Neither is committed. Keep `.env.example` current.
 

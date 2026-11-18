@@ -46,9 +46,51 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* WhatsApp-style simulator (values in :root / .dark below) */
+  --font-wa: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-wa-surface: var(--wa-surface);
+  --color-wa-header: var(--wa-header);
+  --color-wa-chat: var(--wa-chat);
+  --color-wa-pattern: var(--wa-pattern);
+  --color-wa-bubble-in: var(--wa-bubble-in);
+  --color-wa-bubble-out: var(--wa-bubble-out);
+  --color-wa-text: var(--wa-text);
+  --color-wa-meta: var(--wa-meta);
+  --color-wa-icon: var(--wa-icon);
+  --color-wa-divider: var(--wa-divider);
+  --color-wa-input: var(--wa-input);
+  --color-wa-primary: var(--wa-primary);
+  --color-wa-primary-foreground: var(--wa-primary-foreground);
+  --color-wa-tick-read: var(--wa-tick-read);
+  --color-wa-avatar: var(--wa-avatar);
+  --color-wa-pill: var(--wa-pill);
+  --color-wa-notice: var(--wa-notice);
+  --color-wa-notice-text: var(--wa-notice-text);
+  --color-wa-hover: var(--wa-hover);
 }
 
 :root {
+  --wa-surface: #ffffff;
+  --wa-header: #ffffff;
+  --wa-chat: #efeae2;
+  --wa-pattern: rgb(0 0 0 / 0.045);
+  --wa-bubble-in: #ffffff;
+  --wa-bubble-out: #d9fdd3;
+  --wa-text: #111b21;
+  --wa-meta: #667781;
+  --wa-icon: #54656f;
+  --wa-divider: #e9edef;
+  --wa-input: #ffffff;
+  --wa-primary: #1daa61;
+  --wa-primary-foreground: #ffffff;
+  --wa-tick-read: #53bdeb;
+  --wa-avatar: #dfe5e7;
+  --wa-pill: #ffffff;
+  --wa-notice: #ffeecd;
+  --wa-notice-text: #54656f;
+  --wa-hover: #f5f6f6;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,6 +126,25 @@
 }
 
 .dark {
+  --wa-surface: #111b21;
+  --wa-header: #202c33;
+  --wa-chat: #0b141a;
+  --wa-pattern: rgb(255 255 255 / 0.035);
+  --wa-bubble-in: #202c33;
+  --wa-bubble-out: #005c4b;
+  --wa-text: #e9edef;
+  --wa-meta: #8696a0;
+  --wa-icon: #aebac1;
+  --wa-divider: #222d34;
+  --wa-input: #2a3942;
+  --wa-primary: #21c063;
+  --wa-primary-foreground: #111b21;
+  --wa-tick-read: #53bdeb;
+  --wa-avatar: #6a7175;
+  --wa-pill: #182229;
+  --wa-notice: #182229;
+  --wa-notice-text: #ffd279;
+  --wa-hover: #202c33;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -130,4 +191,10 @@
   html {
     @apply font-sans;
   }
+}
+/* Chat wallpaper for the simulator: our own subtle dot grid on the chat colour. */
+@utility wa-chat-wallpaper {
+  background-color: var(--wa-chat);
+  background-image: radial-gradient(var(--wa-pattern) 1.2px, transparent 1.4px);
+  background-size: 16px 16px;
 }
