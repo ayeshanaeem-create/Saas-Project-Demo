@@ -60,7 +60,7 @@ export function HoursEditor({ slug, hours, slotIntervalMin }: { slug: string; ho
                     step={900}
                     defaultValue={current?.opensAt ?? "09:00"}
                     aria-label={`${name} opening time`}
-                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
+                    className="min-w-0 flex-1 px-2 text-[16px] sm:w-32 sm:flex-none"
                   />
                   <span className="text-muted-foreground">to</span>
                   <Input
@@ -69,7 +69,7 @@ export function HoursEditor({ slug, hours, slotIntervalMin }: { slug: string; ho
                     step={900}
                     defaultValue={current?.closesAt ?? "18:00"}
                     aria-label={`${name} closing time`}
-                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
+                    className="min-w-0 flex-1 px-2 text-[16px] sm:w-32 sm:flex-none"
                   />
                 </div>
                 {!isOpen && <span className="text-sm text-muted-foreground">Closed</span>}

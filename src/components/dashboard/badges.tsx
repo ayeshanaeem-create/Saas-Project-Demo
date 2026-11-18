@@ -6,7 +6,7 @@ import type { BookingSource, BookingStatus, Channel, ConversationStatus } from "
 
 export function SourceBadge({ source }: { source: BookingSource }) {
   return source === "agent" ? (
-    <Badge variant="secondary" className="gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+    <Badge variant="secondary" className="gap-1 bg-tint text-primary">
       <Bot aria-hidden />
       AI agent
     </Badge>

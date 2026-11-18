@@ -43,7 +43,7 @@ export function SimulatorShell({ children }: { children: ReactNode }) {
   return (
     <SimulatorThemeContext value={theme}>
       <div className="flex min-h-dvh flex-col items-center bg-muted/50 sm:justify-center sm:gap-3 sm:px-4 sm:py-6">
-        <div className="hidden w-[24.5rem] items-center justify-between sm:flex">
+        <div className="hidden w-[392px] items-center justify-between sm:flex">
           <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm" })}>
             <ArrowLeft aria-hidden />
             Businesses
@@ -63,7 +63,7 @@ export function SimulatorShell({ children }: { children: ReactNode }) {
           <div
             className={cn(
               "relative flex h-dvh w-full flex-col overflow-hidden bg-wa-surface font-wa",
-              "sm:h-[min(52rem,calc(100dvh-6.5rem))] sm:w-[24.5rem] sm:rounded-[3rem] sm:border-[11px] sm:border-neutral-950 sm:shadow-2xl",
+              "sm:h-[min(832px,calc(100dvh-6.5rem))] sm:w-[392px] sm:rounded-[48px] sm:border-[11px] sm:border-neutral-950 sm:shadow-2xl",
             )}
           >
             <Suspense fallback={<StatusBar className="hidden sm:flex" />}>

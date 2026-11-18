@@ -32,9 +32,9 @@ export function ScenarioButtons({
             <button
               type="button"
               onClick={() => sendToPhone(s.message)}
-              className="flex max-w-60 cursor-pointer flex-col items-start gap-0.5 rounded-xl border bg-card px-3 py-2 text-left text-sm transition-colors active:border-emerald-500/50 active:bg-emerald-500/5"
+              className="flex max-w-60 cursor-pointer flex-col items-start gap-0.5 rounded-xl border bg-card px-3 py-2 text-left text-sm transition-colors active:border-primary/50 active:bg-tint"
             >
-              <span className="text-[11px] text-muted-foreground tabular-nums">
+              <span className="text-xs text-muted-foreground tabular-nums">
                 {i + 1}. {s.label}
               </span>
               <span className="max-w-full truncate">“{s.message}”</span>
@@ -52,9 +52,9 @@ export function ScenarioButtons({
           <button
             type="button"
             onClick={() => sendToPhone(s.message)}
-            className="group flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/5"
+            className="group flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-tint"
           >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground tabular-nums">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground tabular-nums">
               {i + 1}
             </span>
             <span className="min-w-0 flex-1">

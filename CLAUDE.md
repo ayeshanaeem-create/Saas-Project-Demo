@@ -343,6 +343,13 @@ Services, prices, hours and house rules are in the system prompt, so there are n
   - **Touch targets:** small buttons get `pointer-coarse:h-9`.
   - **Cards in grids:** use container queries (`@container`, `@md:`), not viewport breakpoints.
   - **Tall dialogs:** get `max-h-[calc(100dvh-2rem)] overflow-y-auto`.
+- **Brand design** (tokens in `globals.css`, light and dark):
+  - **Colours:** `primary` (#0E7A4F), `primary-hover`, `heading`, `muted-foreground`, `border`, `tint` (light green for icon backgrounds and selected states) and `outline-hover`. Use these, not `emerald-*` classes.
+  - **Fonts:** Figtree for body and buttons, Bricolage Grotesque (`font-heading`) for headings.
+  - **Base size:** `html` is 18px (`112.5%`), so rem sizes scale. `text-xs` is redefined as 14px, the smallest text allowed.
+  - **Headings:** h1, h2 and h3 get their size, font and colour from the base layer, at 40–64px, 30–44px and 22px. A page heading should carry no size class. Compact headings (dashboard and demo-panel sections, booking day labels, dialog titles) set their own size.
+  - **The WhatsApp simulator (`.font-wa`)** keeps its own colours and fonts. Its phone frame is sized in px.
+  - **`buttonVariants()`** returns merged classes, so it works on a plain `<Link>`.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.

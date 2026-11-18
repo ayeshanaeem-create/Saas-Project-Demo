@@ -26,7 +26,7 @@ export function MessageList({ business, messages, typing, now, timeZone }: Props
 
   return (
     <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2">
-      <p className="mx-auto mt-3 mb-1 flex w-fit max-w-[85%] items-start gap-1.5 rounded-lg bg-wa-notice px-3 py-1.5 text-center text-[12.5px] leading-snug text-wa-notice-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
+      <p className="mx-auto mt-3 mb-1 flex w-fit max-w-[85%] items-start gap-1.5 rounded-lg bg-wa-notice px-3 py-1.5 text-center text-[14px] leading-snug text-wa-notice-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
         <Bot className="mt-px size-3.5 shrink-0" aria-hidden />
         <span>
           {business.agentName} is an AI booking assistant for {business.name}. This chat is a BookMate AI demo.
@@ -46,7 +46,7 @@ export function MessageList({ business, messages, typing, now, timeZone }: Props
               <p
                 key={message.id}
                 role="status"
-                className="mx-auto my-2 flex w-fit max-w-[85%] items-start gap-1.5 rounded-lg bg-wa-notice px-3 py-1.5 text-center text-[12.5px] leading-snug text-wa-notice-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]"
+                className="mx-auto my-2 flex w-fit max-w-[85%] items-start gap-1.5 rounded-lg bg-wa-notice px-3 py-1.5 text-center text-[14px] leading-snug text-wa-notice-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]"
               >
                 <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
                 <span>{message.text}</span>
@@ -58,7 +58,7 @@ export function MessageList({ business, messages, typing, now, timeZone }: Props
             <Fragment key={message.id}>
               {newDay && (
                 <div className="sticky top-1.5 z-10 my-2 flex justify-center">
-                  <span className="rounded-lg bg-wa-pill px-3 py-1 text-[12.5px] text-wa-meta shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
+                  <span className="rounded-lg bg-wa-pill px-3 py-1 text-[14px] text-wa-meta shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
                     {formatChatDay(new Date(message.sentAt), timeZone, now)}
                   </span>
                 </div>

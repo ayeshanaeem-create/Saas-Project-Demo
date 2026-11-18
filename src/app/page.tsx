@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarCheck,
+  Check,
   Clock,
   LayoutDashboard,
   MessageCircle,
@@ -17,6 +18,7 @@ import { BusinessCard } from "@/components/business/business-card";
 import { ChatPreview } from "@/components/marketing/chat-preview";
 import { buttonVariants } from "@/components/ui/button";
 import { getBusinessSummaries } from "@/lib/businesses";
+import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
@@ -54,7 +56,14 @@ export default function Home() {
             BookMate AI
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1">
-            <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9" })}>
+            <a href="#pricing" className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9" })}>
+              Pricing
+            </a>
+            {/* On phones the hero's "See the owner dashboard" button covers this link. */}
+            <Link
+              href="/dashboard"
+              className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9 max-sm:hidden" })}
+            >
               Dashboard
             </Link>
             <Link href="/demo" className={buttonVariants({ size: "sm", className: "pointer-coarse:h-9" })}>
@@ -67,10 +76,10 @@ export default function Home() {
       <main className="flex-1">
         <section className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1fr_auto]">
           <div className="flex max-w-xl flex-col gap-6">
-            <span className="w-fit rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+            <span className="w-fit rounded-full bg-tint px-3 py-1 text-xs font-semibold text-primary">
               AI booking agent for WhatsApp
             </span>
-            <h1 className="font-heading text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">
+            <h1>
               Your front desk, answering every WhatsApp message and call.
             </h1>
             <p className="text-lg text-pretty text-muted-foreground">
@@ -94,19 +103,19 @@ export default function Home() {
 
         <section aria-labelledby="how-heading" className="border-y bg-muted/40">
           <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
-            <h2 id="how-heading" className="font-heading text-2xl font-semibold tracking-tight">
+            <h2 id="how-heading">
               How it works
             </h2>
             <ol className="mt-8 grid gap-6 md:grid-cols-3">
               {STEPS.map(({ icon: Icon, title, body }, i) => (
                 <li key={title} className="flex flex-col gap-3 rounded-xl border bg-card p-5">
                   <span className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-tint text-primary">
                       <Icon className="size-4" aria-hidden />
                     </span>
                     <span className="text-xs font-medium text-muted-foreground">Step {i + 1}</span>
                   </span>
-                  <h3 className="font-medium">{title}</h3>
+                  <h3>{title}</h3>
                   <p className="text-sm text-muted-foreground">{body}</p>
                 </li>
               ))}
@@ -115,15 +124,15 @@ export default function Home() {
         </section>
 
         <section aria-labelledby="features-heading" className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
-          <h2 id="features-heading" className="font-heading text-2xl font-semibold tracking-tight">
+          <h2 id="features-heading">
             Built for appointment businesses
           </h2>
           <ul className="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex gap-3">
-                <Icon className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <Icon className="mt-1 size-5 shrink-0 text-primary" aria-hidden />
                 <div>
-                  <h3 className="font-medium">{title}</h3>
+                  <h3>{title}</h3>
                   <p className="mt-1 text-sm text-muted-foreground">{body}</p>
                 </div>
               </li>
@@ -134,7 +143,7 @@ export default function Home() {
         <section aria-labelledby="demo-heading" className="border-t bg-muted/40">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-14 sm:px-6">
             <div className="flex flex-col gap-2">
-              <h2 id="demo-heading" className="font-heading text-2xl font-semibold tracking-tight">
+              <h2 id="demo-heading">
                 Try it with a demo business
               </h2>
               <p className="max-w-2xl text-muted-foreground">
@@ -145,6 +154,20 @@ export default function Home() {
             <Suspense fallback={<BusinessGridSkeleton />}>
               <BusinessGrid />
             </Suspense>
+          </div>
+        </section>
+
+        <section id="pricing" aria-labelledby="pricing-heading" className="border-t">
+          <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
+            <h2 id="pricing-heading">Simple monthly pricing</h2>
+            <p className="mt-3 text-muted-foreground">Sample plans for this demo. Cancel any time.</p>
+            <ul className="mt-8 grid gap-5 md:grid-cols-3">
+              {PLANS.map((plan) => (
+                <li key={plan.name}>
+                  <PlanCard plan={plan} />
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       </main>
@@ -177,6 +200,78 @@ async function BusinessGrid() {
         <BusinessCard key={business.id} business={business} />
       ))}
     </div>
+  );
+}
+
+type Plan = {
+  name: string;
+  price: string;
+  perMonth: boolean;
+  features: string[];
+  cta: string;
+  popular?: boolean;
+};
+
+// Sample plans for the demo. There is no sign-up or sales flow, so every button opens the live demo.
+const PLANS: Plan[] = [
+  {
+    name: "Starter",
+    price: "Rs 6,000",
+    perMonth: true,
+    features: ["1 WhatsApp number", "Up to 300 bookings a month", "Owner dashboard"],
+    cta: "Start free trial",
+  },
+  {
+    name: "Growth",
+    price: "Rs 12,000",
+    perMonth: true,
+    features: ["Chat and voice calls", "Up to 1,000 bookings a month", "Hand-off to your team"],
+    cta: "Start free trial",
+    popular: true,
+  },
+  {
+    name: "Multi-branch",
+    price: "Custom",
+    perMonth: false,
+    features: ["Several locations and staff", "Custom agent rules", "Priority support"],
+    cta: "Talk to us",
+  },
+];
+
+function PlanCard({ plan }: { plan: Plan }) {
+  return (
+    <article
+      className={cn(
+        // 24px padding inside a 1px border; the highlighted card's 2px border takes 1px of it.
+        "flex h-full flex-col gap-4 rounded-[14px] border bg-card p-[24px]",
+        plan.popular && "border-2 border-primary p-[23px]",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[20px]">{plan.name}</h3>
+        {plan.popular && (
+          <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">Most popular</span>
+        )}
+      </div>
+      <p className="font-heading text-[32px] leading-none font-bold text-heading">
+        {plan.price}
+        {plan.perMonth && <span className="font-sans text-[15px] font-normal text-muted-foreground"> / month</span>}
+      </p>
+      <ul className="flex flex-1 flex-col gap-2 text-[15px] text-muted-foreground">
+        {plan.features.map((feature) => (
+          <li key={feature} className="flex gap-2">
+            <Check className="mt-0.5 size-[18px] shrink-0 text-primary" aria-hidden />
+            {feature}
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/demo"
+        className={buttonVariants({ variant: plan.popular ? "default" : "outline", className: "w-full" })}
+      >
+        {plan.cta}
+      </Link>
+    </article>
   );
 }
 

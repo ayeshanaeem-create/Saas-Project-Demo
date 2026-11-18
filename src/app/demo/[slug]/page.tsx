@@ -72,7 +72,7 @@ async function DemoHeader({ params }: Params) {
               aria-current={b.slug === slug ? "page" : undefined}
               className={cn(
                 "shrink-0 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors",
-                b.slug === slug ? "bg-secondary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                b.slug === slug ? "bg-tint font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               {b.emoji} {b.name}
@@ -105,7 +105,7 @@ async function CompactIntro({ params }: Params) {
   return (
     <div className="flex min-w-0 flex-col gap-3 lg:hidden">
       <div>
-        <h1 className="font-heading text-xl font-semibold tracking-tight">
+        <h1>
           {business.emoji} {business.name}
         </h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Tap a message to send it from the phone, or type your own.</p>
@@ -159,7 +159,7 @@ async function LivePanel({ params }: Params) {
       {/* Below lg, CompactIntro shows the title and suggestions above the phone instead
           (only one of the two h1s is ever displayed). */}
       <div className="hidden lg:block">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+        <h1>
           {business.emoji} {business.name}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -183,7 +183,7 @@ async function LivePanel({ params }: Params) {
             <ul className="divide-y rounded-lg border bg-card">
               {recent.map((b) => (
                 <li key={b.id} className={cn("flex items-center gap-3 px-3 py-2.5 text-sm", b.status === "cancelled" && "opacity-60")}>
-                  <Bot className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  <Bot className="size-4 shrink-0 text-primary" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <p className={cn("font-medium", b.status === "cancelled" && "line-through")}>
                       {b.serviceName}
@@ -233,8 +233,8 @@ function Panel({
 }) {
   return (
     <section className={cn("flex min-w-0 flex-col gap-3", className)}>
-      <h2 className="flex items-center gap-2 font-heading text-base font-medium">
-        <Icon className="size-4 text-muted-foreground" aria-hidden />
+      <h2 className="flex items-center gap-2 text-[22px]">
+        <Icon className="size-5 text-muted-foreground" aria-hidden />
         {title}
         {aside}
       </h2>

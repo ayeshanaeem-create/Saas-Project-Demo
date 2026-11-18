@@ -56,7 +56,7 @@ export function FormMessage({ state }: { state: FormState }) {
   const ok = state.status === "success";
   const Icon = ok ? CircleCheck : CircleAlert;
   return (
-    <p role={ok ? "status" : "alert"} className={cn("flex items-start gap-1.5 text-sm", ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive")}>
+    <p role={ok ? "status" : "alert"} className={cn("flex items-start gap-1.5 text-sm", ok ? "text-primary" : "text-destructive")}>
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
         {state.message}

@@ -81,7 +81,7 @@ export function ChatList() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-wa-text outline-none placeholder:text-wa-meta"
+            className="min-w-0 flex-1 bg-transparent text-[16px] text-wa-text outline-none placeholder:text-wa-meta"
           />
         </label>
       </div>
@@ -162,7 +162,7 @@ export function ChatList() {
       </ul>
 
       <nav aria-label="Sections" className="grid h-16 shrink-0 grid-cols-2 border-t border-wa-divider">
-        <span aria-current="page" className="flex flex-col items-center justify-center gap-1 text-[12px] font-medium">
+        <span aria-current="page" className="flex flex-col items-center justify-center gap-1 text-[14px] font-medium">
           <span className="flex h-7 w-14 items-center justify-center rounded-full bg-wa-primary/15 text-wa-primary">
             <MessageCircle className="size-5" aria-hidden />
           </span>
@@ -171,7 +171,7 @@ export function ChatList() {
         <span
           aria-disabled
           title="Call history isn't part of the demo. Calls show in each chat."
-          className="flex flex-col items-center justify-center gap-1 text-[12px] text-wa-meta"
+          className="flex flex-col items-center justify-center gap-1 text-[14px] text-wa-meta"
         >
           <span className="flex h-7 w-14 items-center justify-center">
             <Phone className="size-5" aria-hidden />

@@ -32,7 +32,7 @@ export function MessageBubble({ message, startsGroup, timeZone, timeLabel }: Pro
     >
       <div
         className={cn(
-          "relative max-w-[85%] rounded-lg px-2 pt-1.5 pb-2 text-[14.2px] leading-[19px] text-wa-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]",
+          "relative max-w-[85%] rounded-lg px-2 pt-1.5 pb-2 text-[16px] leading-[22px] text-wa-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]",
           outgoing ? "bg-wa-bubble-out" : "bg-wa-bubble-in",
           startsGroup && (outgoing ? "rounded-tr-none" : "rounded-tl-none"),
         )}
@@ -46,7 +46,7 @@ export function MessageBubble({ message, startsGroup, timeZone, timeLabel }: Pro
             </span>
             <span className="flex flex-col">
               <span className="font-medium">Voice call</span>
-              <span className="text-[12.5px] text-wa-meta">{formatCallDuration(message.durationSec ?? 0)}</span>
+              <span className="text-[14px] text-wa-meta">{formatCallDuration(message.durationSec ?? 0)}</span>
             </span>
           </span>
         ) : (
@@ -59,7 +59,7 @@ export function MessageBubble({ message, startsGroup, timeZone, timeLabel }: Pro
           </>
         )}
 
-        <span className="absolute right-2 bottom-1 flex items-center gap-0.5 text-[11px] leading-none text-wa-meta">
+        <span className="absolute right-2 bottom-1 flex items-center gap-0.5 text-[14px] leading-none text-wa-meta">
           <time dateTime={message.sentAt}>{time}</time>
           {outgoing && message.status && <MessageStatus status={message.status} />}
         </span>

@@ -34,7 +34,7 @@ export function TranscriptView({ items, timeZone }: { items: TranscriptItem[]; t
                 <p
                   className={cn(
                     "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
-                    agent ? "rounded-tr-sm bg-emerald-500/10" : "rounded-tl-sm bg-muted",
+                    agent ? "rounded-tr-sm bg-tint" : "rounded-tl-sm bg-muted",
                   )}
                 >
                   <FormattedText text={item.text} />
@@ -76,7 +76,7 @@ export function TranscriptView({ items, timeZone }: { items: TranscriptItem[]; t
                       {item.summary} <span className="underline-offset-2 group-open:hidden hover:underline">· details</span>
                     </span>
                   </summary>
-                  <pre className="mt-2 max-h-64 max-w-[min(36rem,80vw)] overflow-auto rounded-lg bg-muted p-3 font-mono text-[11px] leading-relaxed">
+                  <pre className="mt-2 max-h-64 max-w-[min(36rem,80vw)] overflow-auto rounded-lg bg-muted p-3 font-mono text-xs leading-relaxed">
                     {item.detail}
                   </pre>
                 </details>

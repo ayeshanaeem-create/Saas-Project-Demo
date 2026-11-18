@@ -64,7 +64,7 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                  active ? "bg-secondary font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  active ? "bg-tint font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <Icon className="size-4" aria-hidden />
@@ -85,11 +85,11 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
                 href={segment ? `${base}/${segment}` : base}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-[11px] leading-none transition-colors",
-                  active ? "font-medium text-foreground" : "text-muted-foreground",
+                  "flex flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-xs leading-none transition-colors",
+                  active ? "font-medium text-primary" : "text-muted-foreground",
                 )}
               >
-                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-secondary")}>
+                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-tint")}>
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <span className="max-w-full truncate">{short}</span>

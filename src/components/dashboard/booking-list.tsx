@@ -24,9 +24,9 @@ export function BookingList({ slug, bookings, days, today, timeZone }: Props) {
         const active = dayBookings.filter((b) => b.status !== "cancelled").length;
         return (
           <section key={date} aria-labelledby={`day-${date}`} className="flex flex-col gap-2">
-            <h2 id={`day-${date}`} className="flex items-baseline gap-2 text-sm font-medium">
+            <h2 id={`day-${date}`} className="flex items-baseline gap-2 font-sans text-sm font-semibold tracking-normal">
               {formatInZone(zonedDateTime(date, "12:00", timeZone), timeZone, "EEEE d MMMM")}
-              {date === today && <span className="text-xs font-normal text-emerald-700 dark:text-emerald-400">Today</span>}
+              {date === today && <span className="text-xs font-normal text-primary">Today</span>}
               {date === addDays(today, 1) && <span className="text-xs font-normal text-muted-foreground">Tomorrow</span>}
               <span className="ml-auto text-xs font-normal text-muted-foreground">
                 {active} {active === 1 ? "booking" : "bookings"}
@@ -38,7 +38,7 @@ export function BookingList({ slug, bookings, days, today, timeZone }: Props) {
                 No bookings
               </p>
             ) : (
-              <ul className="divide-y rounded-xl border bg-card">
+              <ul className="@container divide-y rounded-xl border bg-card">
                 {dayBookings.map((b) => (
                   <BookingRow key={b.id} slug={slug} booking={b} timeZone={timeZone} />
                 ))}
@@ -55,8 +55,10 @@ export function BookingRow({ slug, booking: b, timeZone }: { slug: string; booki
   const cancelled = b.status === "cancelled";
   const day = formatInZone(zonedDateTime(b.date, "12:00", timeZone), timeZone, "EEEE d MMMM");
   return (
-    <li className={cn("flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4", cancelled && "opacity-60")}>
-      <div className="shrink-0 text-sm whitespace-nowrap tabular-nums sm:w-44">
+    // One line only when the list itself is wide (container query): the overview's half-width
+    // column stacks like a phone does. The parent <ul> is the @container.
+    <li className={cn("flex flex-col gap-2 px-4 py-3 @xl:flex-row @xl:items-center @xl:gap-4", cancelled && "opacity-60")}>
+      <div className="shrink-0 text-sm whitespace-nowrap tabular-nums @xl:w-44">
         <span className={cn("font-medium", cancelled && "line-through")}>{formatClockTime(b.time)}</span>
         <span className="text-muted-foreground"> – {formatClockTime(b.endTime)}</span>
       </div>

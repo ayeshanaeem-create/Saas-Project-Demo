@@ -42,7 +42,7 @@ export function Composer({ onSend }: { onSend: (text: string) => void }) {
           onKeyDown={onKeyDown}
           placeholder="Message"
           autoComplete="off"
-          className="max-h-28 min-w-0 flex-1 resize-none bg-transparent px-1 py-1.5 text-[15px] leading-5 text-wa-text outline-none [field-sizing:content] placeholder:text-wa-meta"
+          className="max-h-28 min-w-0 flex-1 resize-none bg-transparent px-1 py-1.5 text-[16px] leading-5 text-wa-text outline-none [field-sizing:content] placeholder:text-wa-meta"
         />
         <Paperclip aria-hidden className="mb-1.5 size-5 shrink-0 -rotate-45 text-wa-icon" />
         {!hasText && <Camera aria-hidden className="mb-1.5 size-5 shrink-0 text-wa-icon" />}

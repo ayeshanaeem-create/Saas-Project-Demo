@@ -12,7 +12,7 @@ export default function AppError({ error, retry }: { error: unknown; retry: () =
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-start justify-center gap-4 px-6">
-      <h1 className="font-heading text-2xl font-semibold">Something went wrong</h1>
+      <h1>Something went wrong</h1>
       <p className="text-muted-foreground">
         This page hit an unexpected error. Trying again usually fixes it. If it keeps happening, check that the dev server
         is running and the database is set up (<code className="font-mono text-sm">npm run db:reset</code>).

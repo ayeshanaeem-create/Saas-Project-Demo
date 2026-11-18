@@ -28,7 +28,7 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         <div className="flex items-center gap-3">
           <span
             aria-hidden
-            className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-2xl"
+            className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-tint text-2xl"
           >
             {business.emoji}
           </span>

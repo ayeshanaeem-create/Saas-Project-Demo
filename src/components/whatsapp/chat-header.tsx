@@ -19,7 +19,7 @@ export function ChatHeader({ business, typing }: { business: SimulatorBusiness; 
 
       <div className="ml-2 min-w-0 flex-1 leading-tight">
         <h1 className="truncate text-[16px] font-medium">{business.name}</h1>
-        <p aria-live="polite" className={typing ? "text-[13px] text-wa-primary" : "text-[13px] text-wa-meta"}>
+        <p aria-live="polite" className={typing ? "text-[14px] text-wa-primary" : "text-[14px] text-wa-meta"}>
           {typing ? "typing…" : "online"}
         </p>
       </div>

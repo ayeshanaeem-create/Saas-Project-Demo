@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
 
-// Variable names match the font tokens in globals.css (--font-sans, --font-geist-mono).
-const geistSans = Geist({
+// Variable names match the font tokens in globals.css (--font-sans, --font-bricolage,
+// --font-geist-mono). Figtree is the body and button font; Bricolage Grotesque is for headings.
+const figtree = Figtree({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  weight: ["600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -21,7 +29,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    // data-scroll-behavior: smooth scrolling for in-page links (#pricing), but not when
+    // Next.js scrolls to the top on navigation.
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${figtree.variable} ${bricolage.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

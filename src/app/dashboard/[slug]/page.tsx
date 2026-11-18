@@ -72,7 +72,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
       <div className="grid gap-8 xl:grid-cols-2">
         <section aria-labelledby="today-heading" className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">
-            <h2 id="today-heading" className="font-heading text-lg font-medium">
+            <h2 id="today-heading" className="text-[22px]">
               Today&apos;s schedule
             </h2>
             <Link href={`/dashboard/${slug}/bookings`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">
@@ -84,7 +84,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
               Nothing booked for today yet.
             </p>
           ) : (
-            <ul className="divide-y rounded-xl border bg-card">
+            <ul className="@container divide-y rounded-xl border bg-card">
               {todaysBookings.map((b) => (
                 <BookingRow key={b.id} slug={slug} booking={b} timeZone={business.timezone} />
               ))}
@@ -94,7 +94,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
 
         <section aria-labelledby="chats-heading" className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">
-            <h2 id="chats-heading" className="font-heading text-lg font-medium">
+            <h2 id="chats-heading" className="text-[22px]">
               Recent conversations
             </h2>
             <Link href={`/dashboard/${slug}/conversations`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">

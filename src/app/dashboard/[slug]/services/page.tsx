@@ -37,7 +37,7 @@ async function Services({ params }: Pick<PageProps<"/dashboard/[slug]/services">
       />
 
       <section aria-labelledby="services-heading" className="flex flex-col gap-3">
-        <h2 id="services-heading" className="font-heading text-lg font-medium">
+        <h2 id="services-heading" className="text-[22px]">
           {tables ? "Tables" : "Services"}
         </h2>
         {services.map((service) => (
@@ -55,7 +55,7 @@ async function Services({ params }: Pick<PageProps<"/dashboard/[slug]/services">
       </section>
 
       <section aria-labelledby="hours-heading" className="flex flex-col gap-3">
-        <h2 id="hours-heading" className="font-heading text-lg font-medium">
+        <h2 id="hours-heading" className="text-[22px]">
           Opening hours
         </h2>
         <HoursEditor slug={slug} hours={hours} slotIntervalMin={business.slotIntervalMin} />
