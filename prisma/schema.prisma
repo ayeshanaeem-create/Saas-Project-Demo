@@ -1,0 +1,139 @@
+// BookMate AI data model. SQLite in dev; see CLAUDE.md for conventions.
+// No Prisma enums: string columns are validated by the zod schemas in src/types/domain.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Business {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  emoji           String
+  category        String // BusinessCategory
+  tagline         String
+  address         String
+  phone           String // fictional; shown in the simulator chat header
+  timezone        String   @default("Asia/Karachi")
+  currency        String   @default("PKR")
+  slotIntervalMin Int      @default(30) // granularity of bookable start times
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  services      Service[]
+  workingHours  WorkingHours[]
+  persona       AgentPersona?
+  conversations Conversation[]
+  bookings      Booking[]
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  businessId  String
+  name        String
+  description String
+  price       Int // whole units of Business.currency; 0 means free
+  durationMin Int
+  capacity    Int     @default(1) // bookings of this service that may overlap in time
+  partySize   Int? // restaurant tables only
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([businessId])
+}
+
+// One opening interval per weekday. A missing weekday means closed.
+model WorkingHours {
+  id         String @id @default(cuid())
+  businessId String
+  weekday    Int // 0 = Sunday … 6 = Saturday
+  opensAt    String // "HH:mm" in the business timezone
+  closesAt   String // "HH:mm" in the business timezone
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, weekday])
+}
+
+model AgentPersona {
+  id           String   @id @default(cuid())
+  businessId   String   @unique
+  agentName    String
+  tone         String
+  greeting     String
+  instructions String // business-specific rules appended to the system prompt
+  updatedAt    DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  phone     String   @unique // fictional
+  name      String?
+  createdAt DateTime @default(now())
+
+  conversations Conversation[]
+  bookings      Booking[]
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  businessId String
+  customerId String
+  channel    String // Channel
+  status     String   @default("open") // ConversationStatus
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([businessId, updatedAt])
+  @@index([customerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // MessageRole
+  content        String // JSON: the Anthropic content blocks, stored verbatim
+  text           String // plain-text rendering for the UI; empty for tool results
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model Booking {
+  id         String   @id @default(cuid())
+  businessId String
+  serviceId  String
+  customerId String
+  startAt    DateTime // UTC
+  endAt      DateTime // UTC
+  partySize  Int?
+  status     String   @default("confirmed") // BookingStatus
+  source     String   @default("agent") // BookingSource
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, startAt])
+  @@index([serviceId, startAt])
+  @@index([customerId])
+}
