@@ -27,6 +27,12 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 - **Phase 6 (voice calls): done.** The phone icon in a chat opens `/simulator/[slug]/call`: ringing, the spoken greeting, then listen → agent → speak until hang-up. There are live captions, Mute and Interrupt, a call bubble in the chat afterwards, and each call is its own voice conversation on the dashboard. Tested in headless Edge with fake speech APIs; real speech needs Chrome or Edge with a microphone and an internet connection.
 - **Phase 7 (demo polish): done.** The landing page is at `/`. The live demo at `/demo/[slug]` shows the simulator in an iframe beside a live panel: scenario buttons, "Booked by the agent" and the latest transcript. "Reset demo" (in the demo top bar and the dashboard sidebar) restores the seed data. There are error and 404 pages, an app icon and a README.
 - All seven planned phases are done. The Claude agent still hasn't run against the live API, because the user has no key yet.
+- **Deploy and brand (branch `deploy-and-brand`): in progress.** Deploy prep is written and tested locally, but nothing is deployed yet:
+  - one libSQL driver for both the local file and a hosted Turso database (`src/lib/db-adapter.ts`);
+  - `npm run turso:migrate` / `turso:seed`;
+  - an optional `DEMO_PASSWORD` sign-in prompt (`src/proxy.ts`).
+
+  Branding hasn't started.
 
 ## Product vision
 
@@ -54,7 +60,7 @@ Agents speak **English only** for now. If a customer writes in another language,
 - Node 26, npm 11
 - Next.js 16.4 (App Router, Turbopack) with **Cache Components** and Partial Prefetching on; React 19.3; TypeScript (strict)
 - Tailwind CSS 4 + shadcn/ui (`base-nova` style, built on **Base UI**, not Radix); icons from `lucide-react`
-- Prisma 7.10 + SQLite through the `@prisma/adapter-better-sqlite3` driver adapter
+- Prisma 7.10 + SQLite through the `@prisma/adapter-libsql` driver adapter: a local file in development and tests, a hosted Turso database when deployed
 - `date-fns` + `@date-fns/tz` for timezone math; `zod` 4 for validation
 - Anthropic TypeScript SDK (`@anthropic-ai/sdk`) with tool use (from Phase 4)
 - Browser Web Speech API for voice calls: `SpeechRecognition` (speech to text) and `speechSynthesis` (text to speech)
@@ -66,7 +72,8 @@ Next.js, Prisma and shadcn have all changed their setup across recent majors, so
 - **Prisma 7:** its config file is `prisma7.config.ts` (it loads `.env` via dotenv). The client is generated into `src/generated/prisma` (gitignored; `npm install` regenerates it) and needs the driver adapter.
 - **Prisma version:** npm's `latest` tag for `prisma` points at an 8.0 release candidate. Stay on 7.10.x and ignore the CLI's update banner.
 - **shadcn/ui:** components wrap Base UI primitives, which use a `render` prop where Radix used `asChild`. The `cn` helper comes from shadcn's `cn` package, re-exported by `src/lib/utils.ts`.
-- **npm install scripts:** npm 11 blocks them until approved. Nothing here needs them: better-sqlite3 and Prisma's engines ship prebuilt.
+- **npm install scripts:** npm 11 blocks them until approved. Nothing here needs them: libSQL and Prisma's engines ship prebuilt.
+- **Prisma Migrate and Turso:** Prisma's CLI can't connect to `libsql://` URLs, so the hosted database is migrated by `prisma/turso-migrate.ts`. It runs each `migration.sql` through the libSQL client and records it in its own `_bookmate_migrations` table. It refuses databases that Prisma Migrate manages.
 
 ## Commands
 
@@ -83,6 +90,8 @@ npm run db:migrate -- --name <name>  # create and apply a migration after editin
 npm run db:seed                      # wipe the data and reload the four demo businesses
 npm run db:reset                     # rebuild the DB from migrations, then seed (the "reset demo" path)
 npm run db:studio                    # browse the DB in Prisma Studio
+npm run turso:migrate                # apply migrations to the hosted DB named in .env.turso (safe to rerun)
+npm run turso:seed                   # wipe the hosted DB's data and reload the demo businesses
 ```
 
 First-time setup: `npm install`, copy `.env.example` to `.env` (and `.env.local` from Phase 4), then `npm run db:reset`.
@@ -98,8 +107,10 @@ prisma7.config.ts             # Prisma CLI config: schema path, migrations, seed
 prisma/
   schema.prisma               # source of truth for the data model
   migrations/
-  seed.ts                     # `npm run db:seed`: thin wrapper around src/lib/demo/seed.ts
+  seed.ts                     # `npm run db:seed` / `turso:seed`: thin wrapper around src/lib/demo/seed.ts
+  turso-migrate.ts            # `npm run turso:migrate`: applies migrations to the hosted Turso DB
 src/
+  proxy.ts                    # optional DEMO_PASSWORD gate (HTTP Basic auth) for a deployed demo
   generated/prisma/           # generated Prisma client (gitignored)
   app/
     page.tsx                  # landing page (hero, how it works, features, demo businesses)
@@ -139,6 +150,8 @@ src/
     demo/                     # scenario-buttons (post into the iframe), reset-demo-button
   lib/
     db.ts                     # Prisma client singleton (server-only)
+    db-adapter.ts             # createDbAdapter(): libSQL adapter for DATABASE_URL (+ token); used by scripts too
+    demo-auth.ts              # isAuthorized(): Basic auth check for proxy.ts (+ test)
     businesses.ts             # business queries (server-only)
     time.ts                   # all timezone math (+ time.test.ts)
     format.ts                 # price and duration formatting
@@ -190,6 +203,7 @@ src/
     simulator.ts              # SimulatorBusiness, SimulatorChat, ChatMessage, MessageStatus
     agent-events.ts           # AgentEvent stream + AgentChatRequest body
 .env                          # DATABASE_URL (not committed)
+.env.turso                    # hosted DATABASE_URL + DATABASE_AUTH_TOKEN for the turso:* scripts (not committed)
 .env.example
 vitest.config.mts             # "unit" and "db" test projects
 src/test/                     # test support: server-only stub, test-DB global setup
@@ -328,12 +342,12 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 - **WhatsApp look:** built from Tailwind theme tokens (`wa-*` in `globals.css`, e.g. `bg-wa-bubble-out`, `text-wa-meta`) with light and dark variants, never hard-coded hex in components. Use our own lucide icons. Don't ship WhatsApp or Meta logos. The simulator's dark mode toggles a `dark` class on the phone wrapper only, not on the whole page.
 - **Message formatting:** agent replies use WhatsApp syntax (`*bold*`, `_italic_`, `~strike~`), never Markdown. Render text through `FormattedText`, and strip it for previews with `stripWhatsAppFormatting`.
 - **Tests:** pure logic (slot rules, timezone helpers, formatting) gets Vitest unit tests (`*.test.ts`). Code that needs the database gets `*.db.test.ts` files in the "db" project. Those run one file at a time against `prisma/test.db`, which is rebuilt from `prisma/migrations` on every run and never touches the dev database. DB tests pass a fixed `now` to every booking function. UI is verified by running the app.
-- **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds `AGENT_MODE`, `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL`, and is read only by Next.js. Neither is committed. Keep `.env.example` current.
+- **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds `AGENT_MODE`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` and `DEMO_PASSWORD`, and is read only by Next.js. `.env.turso` holds the hosted database's `DATABASE_URL` and `DATABASE_AUTH_TOKEN`, and is read only by the `turso:*` scripts. A deployed app gets the same variables from the host's settings. None of these files is committed. Keep `.env.example` current.
 
 ## Demo rules
 
 - Seed bookings are placed relative to today, so the calendar looks busy but still has open slots. A seed booking that lands on a closed day or outside that day's hours is skipped, and the seed log says so.
-- **Reset demo** (the button) and `npm run db:seed` both call `seedDemo()`, which wipes every table and recreates the demo data. Both are safe to rerun. But the user keeps their own test chats and bookings in the dev DB, so Claude never runs either, or clicks Reset in a browser test, without asking. Reset tests run against `prisma/test.db` (`demo.db.test.ts`). The button reloads the page afterwards, so the simulator drops its in-memory chats.
+- **Reset demo** (the button), `npm run db:seed` and `npm run turso:seed` all call `seedDemo()`, which wipes every table and recreates the demo data. All are safe to rerun. But the user keeps their own test chats and bookings in the dev DB, and the hosted DB is what the audience sees, so Claude never runs any of them, or clicks Reset in a browser test, without asking. Reset tests run against `prisma/test.db` (`demo.db.test.ts`). The button reloads the page afterwards, so the simulator drops its in-memory chats.
 - **Scenarios** (`src/lib/demo/scenarios.ts`) are suggested messages per business category, sent into the demo iframe by `postMessage({ type: "bookmate:say", slug, text })`. `SimulatorProvider` accepts these from its own origin only. When changing the scripted agent or a scenario, run `demo.db.test.ts`: it plays every scenario against the seed data and fails on any "didn't quite get that". `SHOW_TRANSCRIPTS=1` prints the conversations to read.
 - **The demo phone is an iframe** of `/simulator/[slug]`, 375px wide, so the simulator uses its full-screen phone layout. `allow="microphone; autoplay"` lets voice calls work inside it.
 - **The simulator phone is shared.** The user tries the simulator while Claude runs browser tests, and both act as the one simulator customer, with one name on file. In automated browser tests, use a business the user has no chat with, record the DB state first, and afterwards delete only the rows the test created. Never wipe tables or reset the customer's name.

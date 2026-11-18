@@ -46,6 +46,23 @@ Use Chrome or Edge, allow the microphone, and stay online: the browser's speech 
 4. Open **Full dashboard** to show bookings, the transcript, and how to change services, hours and the agent's tone.
 5. **Reset demo** (top bar or dashboard sidebar) restores everything for the next audience.
 
+## Deploy it
+
+Any host that runs Next.js works (Vercel, for example). Hosted servers usually have no lasting disk, so the deployed app keeps its data in a [Turso](https://turso.tech) database (hosted SQLite) instead of `prisma/dev.db`.
+
+1. Create a Turso database and an auth token for it (in the Turso dashboard, or `turso db create bookmate` and `turso db tokens create bookmate`).
+2. Create `.env.turso` with its `DATABASE_URL` (`libsql://…`) and `DATABASE_AUTH_TOKEN`. See the commented lines at the end of `.env.example`.
+3. Create the tables and load the demo data:
+   ```bash
+   npm run turso:migrate   # applies prisma/migrations; safe to rerun
+   npm run turso:seed      # loads the demo businesses (wipes that database's data)
+   ```
+4. On the host, set the environment variables `DATABASE_URL` and `DATABASE_AUTH_TOKEN`, plus any of `DEMO_PASSWORD`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` and `AGENT_MODE`. The build command is `npm run build`.
+
+With `DEMO_PASSWORD` set, every page asks for it through the browser's sign-in prompt (any username). Voice calls need HTTPS for the microphone, which hosts provide.
+
+After a schema change, run `npm run db:migrate` locally as usual, then `npm run turso:migrate` to bring the hosted database up to date.
+
 ## Development
 
 ```bash

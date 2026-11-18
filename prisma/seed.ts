@@ -1,17 +1,20 @@
 // Resets the database to the demo state. Run with `npm run db:seed` (or `npm run db:reset`
-// to rebuild from migrations first). The seeding itself lives in src/lib/demo/seed.ts,
-// shared with the app's "Reset demo" button.
+// to rebuild from migrations first), or `npm run turso:seed` for the hosted database.
+// The seeding itself lives in src/lib/demo/seed.ts, shared with the app's "Reset demo" button.
 
 import "dotenv/config";
 
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-
 import { PrismaClient } from "../src/generated/prisma/client";
+import { createDbAdapter } from "../src/lib/db-adapter";
 import { seedDemo } from "../src/lib/demo/seed";
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env.");
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+// `npm run turso:seed` passes --remote: without a Turso URL in .env.turso, DATABASE_URL would
+// fall back to .env's local file and wipe the dev database instead.
+if (process.argv.includes("--remote") && (process.env.DATABASE_URL ?? "file:").startsWith("file:")) {
+  throw new Error("No hosted DATABASE_URL in .env.turso; refusing to seed the local database.");
+}
+
+const prisma = new PrismaClient({ adapter: createDbAdapter() });
 
 seedDemo(prisma)
   .then((summaries) => {
