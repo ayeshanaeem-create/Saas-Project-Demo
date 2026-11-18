@@ -24,8 +24,8 @@ export function StatusBar({ className, onCall = false }: { className?: string; o
   return (
     <div
       className={cn(
-        "relative h-10 shrink-0 items-center justify-between px-7 text-[14px] font-semibold text-wa-text",
-        onCall ? "dark bg-wa-chat" : "bg-wa-header",
+        "relative h-10 shrink-0 items-center justify-between px-7 text-[14px] font-semibold",
+        onCall ? "dark bg-wa-chat text-wa-text" : "bg-wa-bar text-wa-bar-text",
         className,
       )}
     >

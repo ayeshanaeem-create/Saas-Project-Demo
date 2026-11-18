@@ -68,6 +68,29 @@ export function MessageBubble({ message, startsGroup, timeZone, timeLabel }: Pro
   );
 }
 
+/**
+ * Three pulsing dots in an incoming bubble while the business is replying. Decorative:
+ * the header's "typing…" is the announced status.
+ */
+export function TypingBubble() {
+  return (
+    <div aria-hidden className="mt-2 flex justify-start px-[4.5%] motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
+      <div className="relative rounded-lg rounded-tl-none bg-wa-bubble-in px-3.5 py-3 shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
+        <BubbleTail outgoing={false} />
+        <span className="flex items-center gap-1">
+          {[0, 160, 320].map((delay) => (
+            <span
+              key={delay}
+              className="size-2 rounded-full bg-wa-meta motion-safe:animate-[wa-typing_1.2s_ease-in-out_infinite]"
+              style={{ animationDelay: `${delay}ms` }}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function BubbleTail({ outgoing }: { outgoing: boolean }) {
   return (
     <svg

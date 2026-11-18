@@ -32,11 +32,11 @@ export function ChatPreview() {
       role="img"
       className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[2.25rem] border-[9px] border-neutral-950 bg-wa-surface font-wa shadow-2xl"
     >
-      <div className="flex items-center gap-2.5 border-b border-wa-divider bg-wa-header px-3 py-2.5 text-wa-text">
+      <div className="flex items-center gap-2.5 bg-wa-bar px-3 py-2.5 text-wa-bar-text">
         <BusinessAvatar emoji="💇‍♀️" className="size-8 text-base" />
         <div className="leading-tight">
           <p className="text-[15px] font-medium">Glamour Salon</p>
-          <p className="text-xs text-wa-meta">online</p>
+          <p className="text-xs text-wa-bar-meta">online</p>
         </div>
       </div>
       <div aria-hidden className="wa-chat-wallpaper flex flex-col pt-1 pb-4">

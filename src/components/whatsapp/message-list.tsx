@@ -3,7 +3,7 @@
 import { Bot, TriangleAlert } from "lucide-react";
 import { Fragment, useLayoutEffect, useRef } from "react";
 
-import { MessageBubble } from "@/components/whatsapp/message-bubble";
+import { MessageBubble, TypingBubble } from "@/components/whatsapp/message-bubble";
 import { formatChatDay, todayInZone } from "@/lib/time";
 import type { ChatMessage, SimulatorBusiness } from "@/types/simulator";
 
@@ -68,6 +68,8 @@ export function MessageList({ business, messages, typing, now, timeZone }: Props
           );
         })}
       </div>
+
+      {typing && <TypingBubble />}
     </div>
   );
 }

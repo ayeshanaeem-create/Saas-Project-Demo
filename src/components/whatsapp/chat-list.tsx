@@ -1,6 +1,18 @@
 "use client";
 
-import { Camera, EllipsisVertical, House, MessageCircle, Moon, Phone, PhoneOutgoing, Search, Sun } from "lucide-react";
+import {
+  Camera,
+  CircleDashed,
+  EllipsisVertical,
+  House,
+  MessageCircle,
+  Moon,
+  Phone,
+  PhoneOutgoing,
+  Search,
+  Sun,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -15,6 +27,12 @@ import { cn } from "@/lib/utils";
 import { stripWhatsAppFormatting } from "@/lib/whatsapp-format";
 
 type Filter = "all" | "unread";
+
+const INACTIVE_TABS = [
+  { label: "Updates", icon: CircleDashed, title: "Updates aren't part of the demo." },
+  { label: "Communities", icon: UsersRound, title: "Communities aren't part of the demo." },
+  { label: "Calls", icon: Phone, title: "Call history isn't part of the demo. Calls show in each chat." },
+] as const;
 
 export function ChatList() {
   const { businesses, state, startedAt } = useSimulator();
@@ -38,11 +56,11 @@ export function ChatList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-wa-surface text-wa-text">
-      <header className="flex h-14 shrink-0 items-center justify-between pr-2 pl-4">
-        <h1 className="text-[22px] font-semibold text-wa-primary">Chats</h1>
+      <header className="flex h-14 shrink-0 items-center justify-between bg-wa-bar pr-2 pl-4 text-wa-bar-text">
+        <h1 className="text-[22px] font-semibold">Chats</h1>
         {/* In the phone frame (sm and up) these icons are decoration, as on WhatsApp. Full-screen
             on a phone, they are the frame's controls instead: dark mode, and the way back. */}
-        <div aria-hidden className="hidden text-wa-icon sm:flex">
+        <div aria-hidden className="hidden sm:flex">
           <span className="flex size-10 items-center justify-center">
             <Camera className="size-5" />
           </span>
@@ -50,13 +68,13 @@ export function ChatList() {
             <EllipsisVertical className="size-5" />
           </span>
         </div>
-        <div className="flex text-wa-icon sm:hidden">
+        <div className="flex sm:hidden">
           <button
             type="button"
             onClick={toggleDark}
             aria-pressed={dark}
             aria-label="Dark mode"
-            className="flex size-10 cursor-pointer items-center justify-center rounded-full hover:bg-wa-hover"
+            className="flex size-10 cursor-pointer items-center justify-center rounded-full hover:bg-wa-bar-text/10"
           >
             {dark ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>
@@ -64,7 +82,7 @@ export function ChatList() {
             <Link
               href="/"
               aria-label="Back to businesses"
-              className="flex size-10 items-center justify-center rounded-full hover:bg-wa-hover"
+              className="flex size-10 items-center justify-center rounded-full hover:bg-wa-bar-text/10"
             >
               <House className="size-5" aria-hidden />
             </Link>
@@ -72,7 +90,7 @@ export function ChatList() {
         </div>
       </header>
 
-      <div className="shrink-0 px-3 pb-2">
+      <div className="shrink-0 px-3 pt-2.5 pb-2">
         <label className="flex h-10 items-center gap-3 rounded-full bg-wa-hover px-4 text-wa-meta">
           <Search className="size-4 shrink-0" aria-hidden />
           <span className="sr-only">Search chats</span>
@@ -161,23 +179,27 @@ export function ChatList() {
         )}
       </ul>
 
-      <nav aria-label="Sections" className="grid h-16 shrink-0 grid-cols-2 border-t border-wa-divider">
-        <span aria-current="page" className="flex flex-col items-center justify-center gap-1 text-[14px] font-medium">
+      {/* WhatsApp's four tabs. Only Chats is part of the demo; the others are greyed out. */}
+      <nav aria-label="Sections" className="grid h-16 shrink-0 grid-cols-4 border-t border-wa-divider">
+        <span aria-current="page" className="flex min-w-0 flex-col items-center justify-center gap-1 text-[14px] font-medium">
           <span className="flex h-7 w-14 items-center justify-center rounded-full bg-wa-primary/15 text-wa-primary">
             <MessageCircle className="size-5" aria-hidden />
           </span>
           Chats
         </span>
-        <span
-          aria-disabled
-          title="Call history isn't part of the demo. Calls show in each chat."
-          className="flex flex-col items-center justify-center gap-1 text-[14px] text-wa-meta"
-        >
-          <span className="flex h-7 w-14 items-center justify-center">
-            <Phone className="size-5" aria-hidden />
+        {INACTIVE_TABS.map(({ label, icon: Icon, title }) => (
+          <span
+            key={label}
+            aria-disabled
+            title={title}
+            className="flex min-w-0 flex-col items-center justify-center gap-1 text-[14px] text-wa-meta"
+          >
+            <span className="flex h-7 w-14 items-center justify-center">
+              <Icon className="size-5" aria-hidden />
+            </span>
+            <span className="max-w-full truncate px-0.5">{label}</span>
           </span>
-          Calls
-        </span>
+        ))}
       </nav>
     </div>
   );

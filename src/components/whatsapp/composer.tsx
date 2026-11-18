@@ -27,7 +27,7 @@ export function Composer({ onSend }: { onSend: (text: string) => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex shrink-0 items-end gap-1.5 bg-transparent px-1.5 pt-1 pb-2">
+    <form onSubmit={submit} className="flex shrink-0 items-end gap-1.5 bg-transparent px-1.5 pt-1 pb-2 sm:pb-5">
       <div className="flex min-h-11 min-w-0 flex-1 items-end gap-1 rounded-3xl bg-wa-input px-2.5 py-1.5 shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]">
         <Smile aria-hidden className="mb-1.5 size-5 shrink-0 text-wa-icon" />
         <label htmlFor="composer" className="sr-only">

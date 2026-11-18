@@ -51,7 +51,9 @@ export function CallScreen({ slug }: { slug: string }) {
   }[phase];
 
   return (
-    <div className="dark flex h-full min-h-0 flex-col items-center bg-wa-chat px-6 pt-8 pb-10 text-wa-text">
+    // A soft green glow behind the caller; it fades out before the top edge, so it meets the
+    // (dark) status bar without a seam.
+    <div className="dark flex h-full min-h-0 flex-col items-center bg-wa-chat bg-[radial-gradient(80%_26%_at_50%_26%,var(--wa-call-glow),transparent)] px-6 pt-8 pb-10 text-wa-text">
       <p className="flex items-center gap-1.5 text-xs text-wa-meta">
         <ShieldCheck className="size-3.5" aria-hidden />
         BookMate AI voice demo

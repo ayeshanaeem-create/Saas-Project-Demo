@@ -75,6 +75,10 @@
   --color-wa-notice: var(--wa-notice);
   --color-wa-notice-text: var(--wa-notice-text);
   --color-wa-hover: var(--wa-hover);
+  /* Top app bars (chat list, chat header) and the phone status bar above them */
+  --color-wa-bar: var(--wa-bar);
+  --color-wa-bar-text: var(--wa-bar-text);
+  --color-wa-bar-meta: var(--wa-bar-meta);
 }
 
 :root {
@@ -97,6 +101,12 @@
   --wa-notice: #ffeecd;
   --wa-notice-text: #54656f;
   --wa-hover: #f5f6f6;
+  --wa-bar: #008069;
+  --wa-bar-text: #ffffff;
+  --wa-bar-meta: rgb(255 255 255 / 0.82);
+  --wa-call-glow: rgb(0 168 132 / 0.3);
+  /* Chat wallpaper: our own booking doodles (calendar, clock, scissors, tooth, cup…), not WhatsApp's art. */
+  --wa-wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='rgba(120,98,66,0.16)' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(24 22) rotate(-8)'%3E%3Crect y='4' width='26' height='22' rx='4'/%3E%3Cpath d='M0 11h26M7 0v7M19 0v7M8 18l3 3 6-6'/%3E%3C/g%3E%3Cg transform='translate(118 26)'%3E%3Ccircle cx='12' cy='12' r='12'/%3E%3Cpath d='M12 5v7l5 3'/%3E%3C/g%3E%3Cg transform='translate(214 20) rotate(6)'%3E%3Cpath d='M4 0h22a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H12l-7 6v-6H4a4 4 0 0 1-4-4V4a4 4 0 0 1 4-4z'/%3E%3Cpath d='M8 8h14M8 13h9'/%3E%3C/g%3E%3Cg transform='translate(34 112) rotate(14)'%3E%3Ccircle cx='5' cy='5' r='5'/%3E%3Ccircle cx='5' cy='23' r='5'/%3E%3Cpath d='M9 8l20 16M9 20L29 4'/%3E%3C/g%3E%3Cpath d='M141 110l3.9 8 8.8 1.3-6.4 6.2 1.5 8.8-7.8-4.2-7.8 4.2 1.5-8.8-6.4-6.2 8.8-1.3z'/%3E%3Cg transform='translate(222 106) rotate(-6)'%3E%3Cpath d='M6 0C1 0-1 5 1 11c1.5 5 2 9 3 14 .8 3.5 3.2 3.5 4 0l1.5-6c.5-2 2.5-2 3 0l1.5 6c.8 3.5 3.2 3.5 4 0 1-5 1.5-9 3-14 2-6 0-11-5-11-2.5 0-3.5 1.5-5.5 1.5S8.5 0 6 0z'/%3E%3C/g%3E%3Cg transform='translate(22 220) rotate(-20)'%3E%3Cpath d='M8 10h18M4 4v12M8 1v18M26 1v18M30 4v12'/%3E%3C/g%3E%3Cpath d='M135 229s-13-8-13-16a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 8-13 16-13 16z'/%3E%3Cg transform='translate(214 206) rotate(8)'%3E%3Cpath d='M2 9h20v8a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8z'/%3E%3Cpath d='M22 12h3a4 4 0 0 1 0 8h-3M8 0c-1.5 2 1.5 3 0 5M14 0c-1.5 2 1.5 3 0 5'/%3E%3C/g%3E%3Cg transform='translate(72 152) rotate(-12)'%3E%3Cpath d='M4 0h5l2.5 6-3 2a13 13 0 0 0 6.5 6.5l2-3 6 2.5v5a2 2 0 0 1-2 2A20 20 0 0 1 2 2a2 2 0 0 1 2-2z'/%3E%3C/g%3E%3Cg transform='translate(176 64)'%3E%3Ccircle cx='9' cy='9' r='9'/%3E%3Cpath d='M5 9l3 3 5-6'/%3E%3C/g%3E%3Cpath d='M82 68l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM180 166l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6zM272 262l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z'/%3E%3Ccircle cx='270' cy='162' r='3'/%3E%3Ccircle cx='62' cy='282' r='2.5'/%3E%3Ccircle cx='172' cy='272' r='2'/%3E%3C/g%3E%3C/svg%3E");
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -159,6 +169,11 @@
   --wa-notice: #182229;
   --wa-notice-text: #ffd279;
   --wa-hover: #202c33;
+  --wa-bar: #202c33;
+  --wa-bar-text: #e9edef;
+  --wa-bar-meta: #8696a0;
+  --wa-call-glow: rgb(0 168 132 / 0.3);
+  --wa-wallpaper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.055)' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(24 22) rotate(-8)'%3E%3Crect y='4' width='26' height='22' rx='4'/%3E%3Cpath d='M0 11h26M7 0v7M19 0v7M8 18l3 3 6-6'/%3E%3C/g%3E%3Cg transform='translate(118 26)'%3E%3Ccircle cx='12' cy='12' r='12'/%3E%3Cpath d='M12 5v7l5 3'/%3E%3C/g%3E%3Cg transform='translate(214 20) rotate(6)'%3E%3Cpath d='M4 0h22a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H12l-7 6v-6H4a4 4 0 0 1-4-4V4a4 4 0 0 1 4-4z'/%3E%3Cpath d='M8 8h14M8 13h9'/%3E%3C/g%3E%3Cg transform='translate(34 112) rotate(14)'%3E%3Ccircle cx='5' cy='5' r='5'/%3E%3Ccircle cx='5' cy='23' r='5'/%3E%3Cpath d='M9 8l20 16M9 20L29 4'/%3E%3C/g%3E%3Cpath d='M141 110l3.9 8 8.8 1.3-6.4 6.2 1.5 8.8-7.8-4.2-7.8 4.2 1.5-8.8-6.4-6.2 8.8-1.3z'/%3E%3Cg transform='translate(222 106) rotate(-6)'%3E%3Cpath d='M6 0C1 0-1 5 1 11c1.5 5 2 9 3 14 .8 3.5 3.2 3.5 4 0l1.5-6c.5-2 2.5-2 3 0l1.5 6c.8 3.5 3.2 3.5 4 0 1-5 1.5-9 3-14 2-6 0-11-5-11-2.5 0-3.5 1.5-5.5 1.5S8.5 0 6 0z'/%3E%3C/g%3E%3Cg transform='translate(22 220) rotate(-20)'%3E%3Cpath d='M8 10h18M4 4v12M8 1v18M26 1v18M30 4v12'/%3E%3C/g%3E%3Cpath d='M135 229s-13-8-13-16a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 8-13 16-13 16z'/%3E%3Cg transform='translate(214 206) rotate(8)'%3E%3Cpath d='M2 9h20v8a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8z'/%3E%3Cpath d='M22 12h3a4 4 0 0 1 0 8h-3M8 0c-1.5 2 1.5 3 0 5M14 0c-1.5 2 1.5 3 0 5'/%3E%3C/g%3E%3Cg transform='translate(72 152) rotate(-12)'%3E%3Cpath d='M4 0h5l2.5 6-3 2a13 13 0 0 0 6.5 6.5l2-3 6 2.5v5a2 2 0 0 1-2 2A20 20 0 0 1 2 2a2 2 0 0 1 2-2z'/%3E%3C/g%3E%3Cg transform='translate(176 64)'%3E%3Ccircle cx='9' cy='9' r='9'/%3E%3Cpath d='M5 9l3 3 5-6'/%3E%3C/g%3E%3Cpath d='M82 68l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM180 166l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6zM272 262l1.6 4 4 1.6-4 1.6-1.6 4-1.6-4-4-1.6 4-1.6z'/%3E%3Ccircle cx='270' cy='162' r='3'/%3E%3Ccircle cx='62' cy='282' r='2.5'/%3E%3Ccircle cx='172' cy='272' r='2'/%3E%3C/g%3E%3C/svg%3E");
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -240,9 +255,23 @@
     font-size: 22px;
   }
 }
-/* Chat wallpaper for the simulator: our own subtle dot grid on the chat colour. */
+/* Chat wallpaper for the simulator: our own doodle tile (--wa-wallpaper) on the chat colour. */
 @utility wa-chat-wallpaper {
   background-color: var(--wa-chat);
-  background-image: radial-gradient(var(--wa-pattern) 1.2px, transparent 1.4px);
-  background-size: 16px 16px;
+  background-image: var(--wa-wallpaper);
+  background-size: 240px 240px;
+}
+
+/* The three dots in the simulator's "typing" bubble. */
+@keyframes wa-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
