@@ -46,14 +46,21 @@ export function HoursEditor({ slug, hours, slotIntervalMin }: { slug: string; ho
                   <Switch checked={isOpen} onCheckedChange={(checked) => setOpen((o) => ({ ...o, [weekday]: checked }))} aria-label={`Open on ${name}`} />
                   {name}
                 </label>
-                <div className={cn("flex items-center gap-2 text-sm", !isOpen && "invisible")}>
+                {/* On phones the times get their own full-width row; a closed day hides them
+                    (still submitted) instead of leaving an empty row. */}
+                <div
+                  className={cn(
+                    "flex w-full items-center gap-2 text-sm sm:w-auto",
+                    !isOpen && "invisible max-sm:hidden",
+                  )}
+                >
                   <Input
                     name={`opens-${weekday}`}
                     type="time"
                     step={900}
                     defaultValue={current?.opensAt ?? "09:00"}
                     aria-label={`${name} opening time`}
-                    className="w-28"
+                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                   />
                   <span className="text-muted-foreground">to</span>
                   <Input
@@ -62,7 +69,7 @@ export function HoursEditor({ slug, hours, slotIntervalMin }: { slug: string; ho
                     step={900}
                     defaultValue={current?.closesAt ?? "18:00"}
                     aria-label={`${name} closing time`}
-                    className="w-28"
+                    className="min-w-0 flex-1 sm:w-32 sm:flex-none"
                   />
                 </div>
                 {!isOpen && <span className="text-sm text-muted-foreground">Closed</span>}

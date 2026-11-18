@@ -10,14 +10,18 @@ import { cn } from "@/lib/utils";
 type Business = { slug: string; name: string; emoji: string };
 
 const SECTIONS = [
-  { segment: "", label: "Overview", icon: LayoutDashboard },
-  { segment: "bookings", label: "Bookings", icon: CalendarDays },
-  { segment: "conversations", label: "Conversations", icon: MessagesSquare },
-  { segment: "services", label: "Services & hours", icon: Store },
-  { segment: "agent", label: "Agent", icon: Bot },
+  { segment: "", label: "Overview", short: "Overview", icon: LayoutDashboard },
+  { segment: "bookings", label: "Bookings", short: "Bookings", icon: CalendarDays },
+  { segment: "conversations", label: "Conversations", short: "Chats", icon: MessagesSquare },
+  { segment: "services", label: "Services & hours", short: "Services", icon: Store },
+  { segment: "agent", label: "Agent", short: "Agent", icon: Bot },
 ] as const;
 
-/** Sidebar on large screens, a scrolling tab bar on small ones. */
+/**
+ * Sidebar on large screens. Below `lg` the sections move to a tab bar fixed to the bottom
+ * of the screen, like a phone app (the layout leaves room for it), and the sidebar's extra
+ * links move to the dashboard header.
+ */
 export function DashboardNav({ businesses, slug }: { businesses: Business[]; slug: string }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -39,7 +43,7 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
           id="business-switcher"
           value={slug}
           onChange={(e) => switchBusiness(e.target.value)}
-          className="h-9 w-full min-w-0 cursor-pointer rounded-lg border border-input bg-background px-2.5 text-sm font-medium outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-input bg-background px-2.5 text-base font-medium outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 lg:h-9 lg:text-sm"
         >
           {businesses.map((b) => (
             <option key={b.slug} value={b.slug}>
@@ -49,11 +53,12 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
         </select>
       </div>
 
-      <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+      {/* Sidebar (lg and up) */}
+      <ul className="hidden flex-col gap-1 lg:flex">
         {SECTIONS.map(({ segment, label, icon: Icon }) => {
           const active = section === segment;
           return (
-            <li key={segment} className="shrink-0">
+            <li key={segment}>
               <Link
                 href={segment ? `${base}/${segment}` : base}
                 aria-current={active ? "page" : undefined}
@@ -64,6 +69,30 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
               >
                 <Icon className="size-4" aria-hidden />
                 {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Bottom tab bar (below lg) */}
+      <ul className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+        {SECTIONS.map(({ segment, short, icon: Icon }) => {
+          const active = section === segment;
+          return (
+            <li key={segment} className="min-w-0">
+              <Link
+                href={segment ? `${base}/${segment}` : base}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-[11px] leading-none transition-colors",
+                  active ? "font-medium text-foreground" : "text-muted-foreground",
+                )}
+              >
+                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-secondary")}>
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <span className="max-w-full truncate">{short}</span>
               </Link>
             </li>
           );

@@ -30,7 +30,12 @@ export default function DemoPage({ params }: PageProps<"/demo/[slug]">) {
       <Suspense fallback={<div className="h-16 border-b bg-background" />}>
         <DemoHeader params={params} />
       </Suspense>
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-10 lg:px-8">
+      {/* Phones and tablets stack: intro and suggested messages, the phone, then the live panel.
+          From lg the phone sits beside the panel, which then holds the intro and suggestions. */}
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-10 lg:px-8">
+        <Suspense fallback={<Skeleton className="h-28 lg:hidden" />}>
+          <CompactIntro params={params} />
+        </Suspense>
         <Suspense fallback={<PhoneFrame>{null}</PhoneFrame>}>
           <DemoPhone params={params} />
         </Suspense>
@@ -51,11 +56,15 @@ async function DemoHeader({ params }: Params) {
 
   return (
     <header className="border-b bg-background">
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="font-heading text-lg font-semibold tracking-tight">
+      {/* Below lg the business tabs get their own swipeable row under the logo and buttons. */}
+      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className="mr-auto font-heading text-lg font-semibold tracking-tight lg:mr-0">
           BookMate AI <span className="font-normal text-muted-foreground">· live demo</span>
         </Link>
-        <nav aria-label="Demo businesses" className="-mx-1 flex flex-1 gap-1 overflow-x-auto px-1">
+        <nav
+          aria-label="Demo businesses"
+          className="order-last -mx-1 flex basis-full gap-1 overflow-x-auto px-1 [scrollbar-width:none] lg:order-none lg:basis-auto lg:flex-1"
+        >
           {businesses.map((b) => (
             <Link
               key={b.slug}
@@ -70,21 +79,46 @@ async function DemoHeader({ params }: Params) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/${slug}`} target="_blank" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link
+            href={`/dashboard/${slug}`}
+            target="_blank"
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9 max-sm:w-9 max-sm:px-0" })}
+          >
             <LayoutDashboard aria-hidden />
-            Full dashboard
+            <span className="max-sm:sr-only">Full dashboard</span>
           </Link>
-          <ResetDemoButton />
+          <ResetDemoButton compact />
         </div>
       </div>
     </header>
   );
 }
 
-function PhoneFrame({ children }: { children: ReactNode }) {
+/** Phone-sized intro for screens where the panel sits below the phone: title and suggestions. */
+async function CompactIntro({ params }: Params) {
+  const { slug } = await params;
+  await connection();
+  const business = await getBusinessBySlug(slug);
+  if (!business) notFound();
+
   return (
-    <div className="mx-auto h-[75dvh] w-full max-w-[395px] overflow-hidden rounded-[2.5rem] border-[10px] border-neutral-950 bg-background shadow-2xl lg:sticky lg:top-6 lg:h-[min(812px,calc(100dvh-8rem))] lg:w-[395px]">
+    <div className="flex min-w-0 flex-col gap-3 lg:hidden">
+      <div>
+        <h1 className="font-heading text-xl font-semibold tracking-tight">
+          {business.emoji} {business.name}
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Tap a message to send it from the phone, or type your own.</p>
+      </div>
+      <ScenarioButtons slug={slug} scenarios={SCENARIOS[business.category]} layout="chips" />
+    </div>
+  );
+}
+
+function PhoneFrame({ children }: { children: ReactNode }) {
+  // A slimmer bezel on phones, where the frame sits inside a real phone screen.
+  return (
+    <div className="mx-auto h-[75dvh] min-h-[28rem] w-full max-w-[395px] overflow-hidden rounded-[2rem] border-[6px] border-neutral-950 bg-background shadow-2xl sm:rounded-[2.5rem] sm:border-[10px] lg:sticky lg:top-6 lg:h-[min(812px,calc(100dvh-8rem))] lg:min-h-0 lg:w-[395px]">
       {children ?? <Skeleton className="h-full w-full rounded-none" />}
     </div>
   );
@@ -122,7 +156,9 @@ async function LivePanel({ params }: Params) {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <AutoRefresh seconds={3} />
-      <div>
+      {/* Below lg, CompactIntro shows the title and suggestions above the phone instead
+          (only one of the two h1s is ever displayed). */}
+      <div className="hidden lg:block">
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           {business.emoji} {business.name}
         </h1>
@@ -132,7 +168,7 @@ async function LivePanel({ params }: Params) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Panel icon={Sparkles} title="Try saying">
+        <Panel icon={Sparkles} title="Try saying" className="hidden lg:flex">
           <ScenarioButtons slug={slug} scenarios={scenarios} />
           <p className="mt-3 text-xs text-muted-foreground">
             Click to send, in order, or type anything in the chat. The 📞 icon starts a voice call (Chrome or Edge).
@@ -186,15 +222,17 @@ function Panel({
   icon: Icon,
   title,
   aside,
+  className,
   children,
 }: {
   icon: typeof Bot;
   title: string;
   aside?: ReactNode;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="flex min-w-0 flex-col gap-3">
+    <section className={cn("flex min-w-0 flex-col gap-3", className)}>
       <h2 className="flex items-center gap-2 font-heading text-base font-medium">
         <Icon className="size-4 text-muted-foreground" aria-hidden />
         {title}

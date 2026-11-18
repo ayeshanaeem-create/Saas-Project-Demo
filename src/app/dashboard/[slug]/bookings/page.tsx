@@ -65,16 +65,16 @@ async function Bookings({ params, searchParams }: PageProps<"/dashboard/[slug]/b
       />
 
       <nav aria-label="Weeks" className="flex items-center gap-2">
-        <Link href={weekLink(addDays(from, -DAYS))} className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link href={weekLink(addDays(from, -DAYS))} className={buttonVariants({ variant: "outline", size: "sm", className: "pointer-coarse:h-9" })}>
           <ChevronLeft aria-hidden />
           Previous week
         </Link>
         {from !== today && (
-          <Link href={weekLink(today)} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          <Link href={weekLink(today)} className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9" })}>
             Today
           </Link>
         )}
-        <Link href={weekLink(addDays(from, DAYS))} className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link href={weekLink(addDays(from, DAYS))} className={buttonVariants({ variant: "outline", size: "sm", className: "pointer-coarse:h-9" })}>
           Next week
           <ChevronRight aria-hidden />
         </Link>

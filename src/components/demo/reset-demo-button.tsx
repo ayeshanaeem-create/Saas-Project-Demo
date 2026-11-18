@@ -6,9 +6,13 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { resetDemoAction } from "@/lib/demo/actions";
+import { cn } from "@/lib/utils";
 
-/** Restores the demo data. Reloads afterwards so the simulator drops its in-memory chats too. */
-export function ResetDemoButton({ variant = "outline" }: { variant?: "outline" | "ghost" }) {
+/**
+ * Restores the demo data. Reloads afterwards so the simulator drops its in-memory chats too.
+ * `compact` shows only the icon on phone-sized screens (the label stays for screen readers).
+ */
+export function ResetDemoButton({ variant = "outline", compact = false }: { variant?: "outline" | "ghost"; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -21,9 +25,13 @@ export function ResetDemoButton({ variant = "outline" }: { variant?: "outline" |
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant={variant} size="sm" />}>
+      <DialogTrigger
+        render={
+          <Button variant={variant} size="sm" className={cn("pointer-coarse:h-9", compact && "max-sm:w-9 max-sm:px-0")} />
+        }
+      >
         <RotateCcw aria-hidden />
-        Reset demo
+        <span className={cn(compact && "max-sm:sr-only")}>Reset demo</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

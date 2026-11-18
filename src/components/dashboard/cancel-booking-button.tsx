@@ -27,7 +27,9 @@ export function CancelBookingButton({ slug, bookingId, summary }: { slug: string
         setError(null);
       }}
     >
-      <DialogTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" />}>
+      <DialogTrigger
+        render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive pointer-coarse:h-9" />}
+      >
         Cancel
       </DialogTrigger>
       <DialogContent>

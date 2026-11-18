@@ -39,7 +39,8 @@ export function NewBookingDialog(props: Props) {
         <Plus aria-hidden />
         New booking
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      {/* Scrolls inside the screen on short phones and when the on-screen keyboard is open. */}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New booking</DialogTitle>
           <DialogDescription>For walk-ins and phone calls. It shows as a staff booking.</DialogDescription>

@@ -21,7 +21,9 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
   const { hoursToday, persona } = business;
 
   return (
-    <Card className="h-full">
+    // @container: the footer stacks when the card itself is narrow (phones, and the
+    // two-column grid on tablets), not just on small screens.
+    <Card className="@container h-full">
       <CardHeader>
         <div className="flex items-center gap-3">
           <span
@@ -31,7 +33,8 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
             {business.emoji}
           </span>
           <div className="min-w-0">
-            <CardTitle className="truncate">{business.name}</CardTitle>
+            {/* Wraps rather than truncating, so a long name never pushes the badge off the card. */}
+            <CardTitle className="text-balance">{business.name}</CardTitle>
             <CardDescription>{business.tagline}</CardDescription>
           </div>
         </div>
@@ -85,15 +88,15 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         </ul>
       </CardContent>
 
-      <CardFooter className="justify-between gap-3 text-muted-foreground">
-        <span className="flex min-w-0 items-center gap-2">
-          <MapPin className="size-4 shrink-0" aria-hidden />
-          <span className="truncate">{business.address}</span>
+      <CardFooter className="flex-col items-stretch gap-3 text-muted-foreground @md:flex-row @md:items-center @md:justify-between">
+        <span className="flex min-w-0 items-start gap-2 @md:items-center">
+          <MapPin className="mt-0.5 size-4 shrink-0 @md:mt-0" aria-hidden />
+          <span className="@md:truncate">{business.address}</span>
         </span>
         <span className="flex shrink-0 gap-2">
           <Link
             href={`/dashboard/${business.slug}`}
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
             aria-label={`${business.name} dashboard`}
           >
             <LayoutDashboard aria-hidden />
@@ -101,7 +104,7 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
           </Link>
           <Link
             href={`/demo/${business.slug}`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
             aria-label={`Try the ${business.name} demo`}
           >
             <MessageCircle aria-hidden />

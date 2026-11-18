@@ -1,12 +1,13 @@
 "use client";
 
-import { Camera, EllipsisVertical, MessageCircle, Phone, PhoneOutgoing, Search } from "lucide-react";
+import { Camera, EllipsisVertical, House, MessageCircle, Moon, Phone, PhoneOutgoing, Search, Sun } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { BusinessAvatar } from "@/components/whatsapp/business-avatar";
 import { MessageStatus } from "@/components/whatsapp/message-status";
 import { useSimulator } from "@/components/whatsapp/simulator-provider";
+import { useEmbedded, useSimulatorTheme } from "@/components/whatsapp/simulator-shell";
 import { useNow } from "@/hooks/use-now";
 import { SIMULATOR_TIMEZONE } from "@/lib/simulator/constants";
 import { formatChatListTime } from "@/lib/time";
@@ -17,6 +18,9 @@ type Filter = "all" | "unread";
 
 export function ChatList() {
   const { businesses, state, startedAt } = useSimulator();
+  const { dark, toggleDark } = useSimulatorTheme();
+  // Inside the live demo's iframe there is no "back": the page around it is the demo.
+  const embedded = useEmbedded();
   const now = useNow(startedAt);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -36,13 +40,35 @@ export function ChatList() {
     <div className="flex h-full min-h-0 flex-col bg-wa-surface text-wa-text">
       <header className="flex h-14 shrink-0 items-center justify-between pr-2 pl-4">
         <h1 className="text-[22px] font-semibold text-wa-primary">Chats</h1>
-        <div aria-hidden className="flex text-wa-icon">
+        {/* In the phone frame (sm and up) these icons are decoration, as on WhatsApp. Full-screen
+            on a phone, they are the frame's controls instead: dark mode, and the way back. */}
+        <div aria-hidden className="hidden text-wa-icon sm:flex">
           <span className="flex size-10 items-center justify-center">
             <Camera className="size-5" />
           </span>
           <span className="flex size-10 items-center justify-center">
             <EllipsisVertical className="size-5" />
           </span>
+        </div>
+        <div className="flex text-wa-icon sm:hidden">
+          <button
+            type="button"
+            onClick={toggleDark}
+            aria-pressed={dark}
+            aria-label="Dark mode"
+            className="flex size-10 cursor-pointer items-center justify-center rounded-full hover:bg-wa-hover"
+          >
+            {dark ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+          </button>
+          {!embedded && (
+            <Link
+              href="/"
+              aria-label="Back to businesses"
+              className="flex size-10 items-center justify-center rounded-full hover:bg-wa-hover"
+            >
+              <House className="size-5" aria-hidden />
+            </Link>
+          )}
         </div>
       </header>
 

@@ -27,12 +27,14 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 - **Phase 6 (voice calls): done.** The phone icon in a chat opens `/simulator/[slug]/call`: ringing, the spoken greeting, then listen → agent → speak until hang-up. There are live captions, Mute and Interrupt, a call bubble in the chat afterwards, and each call is its own voice conversation on the dashboard. Tested in headless Edge with fake speech APIs; real speech needs Chrome or Edge with a microphone and an internet connection.
 - **Phase 7 (demo polish): done.** The landing page is at `/`. The live demo at `/demo/[slug]` shows the simulator in an iframe beside a live panel: scenario buttons, "Booked by the agent" and the latest transcript. "Reset demo" (in the demo top bar and the dashboard sidebar) restores the seed data. There are error and 404 pages, an app icon and a README.
 - All seven planned phases are done. The Claude agent still hasn't run against the live API, because the user has no key yet.
-- **Deploy and brand (branch `deploy-and-brand`): in progress.** Deploy prep is written and tested locally, but nothing is deployed yet:
+- **Deploy and brand (branch `deploy-and-brand`): deploy done; branding hasn't started.** The deploy pieces:
   - one libSQL driver for both the local file and a hosted Turso database (`src/lib/db-adapter.ts`);
   - `npm run turso:migrate` / `turso:seed`;
   - an optional `DEMO_PASSWORD` sign-in prompt (`src/proxy.ts`).
 
-  Branding hasn't started.
+  A mobile layout pass is also on this branch: every page was checked at 360, 768 and 1280px (see "Responsive layout" below).
+
+  The app is live on Vercel, which deploys `main` from GitHub (`origin`) on every push. Its data is in a Turso database in `aws-us-east-1`, next to Vercel's default function region. The hosted database was migrated and seeded on 2026-11-18. No `DEMO_PASSWORD` is set yet.
 
 ## Product vision
 
@@ -334,6 +336,13 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 - **Prerendered pages can't format timezones:** `@date-fns/tz` reads the clock internally, so `next build` fails ("unstable value `new Date()`") if a prerendered component formats a time. Static content passes ready-made labels (`MessageBubble`'s `timeLabel`, as in `ChatPreview`); live content reads after `connection()`.
 - **Constants for server components** go in plain modules (e.g. `src/lib/demo/constants.ts`), not `"use client"` files. A value imported from a client module arrives in a server component as a client reference, not the value.
 - **Stale dev server:** if the dev server says an exported function "is not a function" although it exists, its module graph is stale, typically after `next build` ran alongside it. Restart `npm run dev`. Restart it after Prisma schema changes too, so it loads the new client.
+- **Responsive layout:** every page must work from 360px wide with no sideways scrolling.
+  - **Dashboard below `lg`:** the sections become a tab bar fixed to the bottom of the screen (`DashboardNav`), so the layout adds `pb-24`. The sidebar's extra links move to the header (`HeaderActions`).
+  - **Demo page below `lg`:** `CompactIntro` puts the title and a swipeable row of suggested messages above the phone, and the live panel hides its own copies.
+  - **Simulator below `sm`:** it fills the screen. The chat list header carries the dark-mode toggle and the way back (`useSimulatorTheme`, `useEmbedded`). There is no way back inside the demo iframe.
+  - **Touch targets:** small buttons get `pointer-coarse:h-9`.
+  - **Cards in grids:** use container queries (`@container`, `@md:`), not viewport breakpoints.
+  - **Tall dialogs:** get `max-h-[calc(100dvh-2rem)] overflow-y-auto`.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.

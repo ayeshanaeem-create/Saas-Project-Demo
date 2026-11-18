@@ -54,10 +54,10 @@ export default function Home() {
             BookMate AI
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1">
-            <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9" })}>
               Dashboard
             </Link>
-            <Link href="/demo" className={buttonVariants({ size: "sm" })}>
+            <Link href="/demo" className={buttonVariants({ size: "sm", className: "pointer-coarse:h-9" })}>
               Live demo
             </Link>
           </nav>

@@ -75,7 +75,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
             <h2 id="today-heading" className="font-heading text-lg font-medium">
               Today&apos;s schedule
             </h2>
-            <Link href={`/dashboard/${slug}/bookings`} className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href={`/dashboard/${slug}/bookings`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">
               All bookings →
             </Link>
           </div>
@@ -97,7 +97,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
             <h2 id="chats-heading" className="font-heading text-lg font-medium">
               Recent conversations
             </h2>
-            <Link href={`/dashboard/${slug}/conversations`} className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href={`/dashboard/${slug}/conversations`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">
               All conversations →
             </Link>
           </div>

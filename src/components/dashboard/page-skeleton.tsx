@@ -19,9 +19,10 @@ export function PageSkeleton({ rows = 4 }: { rows?: number }) {
 export function NavSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading navigation" className="flex flex-col gap-2">
-      <Skeleton className="h-9 w-full" />
+      <Skeleton className="h-10 w-full lg:h-9" />
+      {/* Below lg the sections are a bottom tab bar, so only the business switcher shows here. */}
       {Array.from({ length: 5 }, (_, i) => (
-        <Skeleton key={i} className="h-8 w-full" />
+        <Skeleton key={i} className="hidden h-8 w-full lg:block" />
       ))}
     </div>
   );
