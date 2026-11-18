@@ -16,7 +16,14 @@ export type SimulatorBusiness = {
   hours: { weekday: number; opensAt: string; closesAt: string }[];
 };
 
-export type MessageStatus = "sending" | "sent" | "delivered" | "read";
+/** A saved chat between the simulator customer and one business. */
+export type SimulatorChat = {
+  /** When the conversation began (ISO), which dates the business's greeting. */
+  startedAt: string;
+  messages: ChatMessage[];
+};
+
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
 
 export type ChatMessage = {
   id: string;
@@ -27,4 +34,6 @@ export type ChatMessage = {
   sentAt: string;
   /** Delivery ticks; outgoing messages only. */
   status?: MessageStatus;
+  /** A notice from the simulator itself (e.g. "the assistant couldn't reply"), shown as a centred pill. */
+  kind?: "notice";
 };

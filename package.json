@@ -17,6 +17,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.10.0",
     "@base-ui/react": "^1.9.0",
     "@date-fns/tz": "1.5.0",
     "@prisma/adapter-better-sqlite3": "7.10.1",

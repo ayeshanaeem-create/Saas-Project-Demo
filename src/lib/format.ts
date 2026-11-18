@@ -11,6 +11,19 @@ export function formatPrice(amount: number, currency: string): string {
   return formatter.format(amount);
 }
 
+/**
+ * Pakistani numbers in their usual written form:
+ * "+923001110001" → "+92 300 1110001", "+924235550101" → "+92 42 3555 0101".
+ * Anything else is returned unchanged.
+ */
+export function formatPhone(e164: string): string {
+  const mobile = /^\+92(3\d{2})(\d{7})$/.exec(e164);
+  if (mobile) return `+92 ${mobile[1]} ${mobile[2]}`;
+  const lahoreOrKarachi = /^\+92(42|21)(\d{4})(\d{4})$/.exec(e164);
+  if (lahoreOrKarachi) return `+92 ${lahoreOrKarachi[1]} ${lahoreOrKarachi[2]} ${lahoreOrKarachi[3]}`;
+  return e164;
+}
+
 /** 45 → "45 min", 60 → "1 hr", 90 → "1 hr 30 min". */
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);

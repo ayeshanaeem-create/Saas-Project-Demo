@@ -5,6 +5,7 @@ import { Suspense, type ReactNode } from "react";
 import { SimulatorProvider } from "@/components/whatsapp/simulator-provider";
 import { SimulatorShell } from "@/components/whatsapp/simulator-shell";
 import { getSimulatorBusinesses } from "@/lib/businesses";
+import { getSimulatorChats } from "@/lib/simulator/chats";
 
 export const metadata: Metadata = {
   title: "Simulator · BookMate AI",
@@ -25,9 +26,9 @@ export default function SimulatorLayout({ children }: LayoutProps<"/simulator">)
 
 async function SimulatorData({ children }: { children: ReactNode }) {
   await connection();
-  const businesses = await getSimulatorBusinesses();
+  const [businesses, chats] = await Promise.all([getSimulatorBusinesses(), getSimulatorChats()]);
   return (
-    <SimulatorProvider businesses={businesses} startedAt={new Date().toISOString()}>
+    <SimulatorProvider businesses={businesses} chats={chats} startedAt={new Date().toISOString()}>
       {children}
     </SimulatorProvider>
   );

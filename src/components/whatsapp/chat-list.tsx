@@ -25,7 +25,7 @@ export function ChatList() {
   const rows = businesses
     .map((business) => {
       const conversation = state.conversations[business.slug];
-      return { business, conversation, last: conversation?.messages.at(-1) };
+      return { business, conversation, last: conversation?.messages.findLast((m) => m.kind !== "notice") };
     })
     .filter(({ business }) => business.name.toLowerCase().includes(needle))
     .filter(({ conversation }) => filter === "all" || (conversation?.unread ?? 0) > 0)
@@ -80,7 +80,7 @@ export function ChatList() {
       <ul className="min-h-0 flex-1 overflow-y-auto">
         {rows.map(({ business, conversation, last }) => {
           const unread = conversation?.unread ?? 0;
-          const typing = (conversation?.pendingReplies ?? 0) > 0;
+          const typing = conversation?.typing ?? false;
           return (
             <li key={business.slug}>
               <Link

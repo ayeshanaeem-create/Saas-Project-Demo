@@ -22,7 +22,7 @@ export function ChatScreen({ slug }: { slug: string }) {
   // The server page already 404s unknown slugs; this covers a stale client state.
   if (!business || !conversation) return null;
 
-  const typing = conversation.pendingReplies > 0;
+  const { typing } = conversation;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-wa-chat motion-safe:animate-in motion-safe:slide-in-from-right-4 motion-safe:fade-in motion-safe:duration-200">

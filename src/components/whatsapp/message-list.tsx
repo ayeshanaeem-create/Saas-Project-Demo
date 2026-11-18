@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot } from "lucide-react";
+import { Bot, TriangleAlert } from "lucide-react";
 import { Fragment, useLayoutEffect, useRef } from "react";
 
 import { MessageBubble } from "@/components/whatsapp/message-bubble";
@@ -38,7 +38,21 @@ export function MessageList({ business, messages, typing, now, timeZone }: Props
           const previous = messages[i - 1];
           const day = todayInZone(timeZone, new Date(message.sentAt));
           const newDay = !previous || todayInZone(timeZone, new Date(previous.sentAt)) !== day;
-          const startsGroup = newDay || previous?.direction !== message.direction;
+          const startsGroup =
+            newDay || previous?.direction !== message.direction || previous?.kind === "notice";
+
+          if (message.kind === "notice") {
+            return (
+              <p
+                key={message.id}
+                role="status"
+                className="mx-auto my-2 flex w-fit max-w-[85%] items-start gap-1.5 rounded-lg bg-wa-notice px-3 py-1.5 text-center text-[12.5px] leading-snug text-wa-notice-text shadow-[0_1px_0.5px_rgb(11_20_26/0.13)]"
+              >
+                <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
+                <span>{message.text}</span>
+              </p>
+            );
+          }
 
           return (
             <Fragment key={message.id}>

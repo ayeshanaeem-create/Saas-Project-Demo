@@ -11,9 +11,12 @@ This repo is a **demo build**. It does **not** connect to the real WhatsApp Busi
 The build runs in phases, and each phase is agreed in conversation before it starts. Update this section as phases land.
 
 - **Phase 1 (scaffold and data): done.** Next.js app, Prisma schema and first migration, seed data for the four businesses, timezone helpers with tests, and a temporary home page listing the businesses from the database.
-- **Phase 2 (WhatsApp simulator UI): done.** `/simulator` (chat list) and `/simulator/[slug]` (chat) in a phone frame, with ticks, a typing indicator, unread badges, search, WhatsApp text formatting, and light and dark mode. Replies come from `src/lib/simulator/placeholder-replies.ts`, and chat state lives only in the browser.
+- **Phase 2 (WhatsApp simulator UI): done.** `/simulator` (chat list) and `/simulator/[slug]` (chat) in a phone frame, with ticks, a typing indicator, unread badges, search, WhatsApp text formatting, and light and dark mode.
 - **Phase 3 (booking engine): done.** Pure slot logic in `src/lib/booking/availability.ts`, and DB operations (availability, create, reschedule, cancel, customer lookups) in `src/lib/booking/bookings.ts`. Covered by unit tests and DB tests, including simultaneous bookings. No UI yet.
-- Next: Phase 4, the AI agent.
+- **Phase 4 (agents): done; the Claude agent hasn't run against the live API yet.** `POST /api/agent/chat` is answered by one of two agents, both using the booking engine and saving every message:
+  - **Scripted agent** (`src/lib/agent/scripted/`): rule-based, free, needs no key. It reads services, dates, times, party sizes and names with regex parsers, and walks the customer through booking, cancelling and rescheduling. **This is what the demo runs on for now**, because the user has no API key yet.
+  - **Claude agent** (`run-agent.ts`): a tool loop on Claude. Covered by tests with a fake client; it switches on automatically once `ANTHROPIC_API_KEY` is set.
+- Next: Phase 5, the owner dashboard.
 
 ## Product vision
 
@@ -102,7 +105,7 @@ src/
       page.tsx                # overview: today's bookings, stats
       bookings/ conversations/ services/ agent/
       actions.ts              # Server Actions for dashboard mutations
-    api/agent/chat/route.ts   # † streaming agent endpoint
+    api/agent/chat/route.ts   # POST: one customer turn, streams AgentEvents as NDJSON
     layout.tsx
     globals.css               # shadcn tokens + wa-* simulator tokens + wa-chat-wallpaper utility
   components/
@@ -122,13 +125,23 @@ src/
     whatsapp-format.ts        # *bold* _italic_ ~strike~ ```mono``` parser (+ test)
     utils.ts                  # shadcn's cn()
     simulator/
-      constants.ts            # SIMULATOR_TIMEZONE (the phone's clock)
-      placeholder-replies.ts  # Phase 2 stand-in replies (+ test); delete in Phase 4
-    agent/                    # †
-      config.ts               # Anthropic client, model, effort
-      system-prompt.ts        # builds the persona prompt from a Business record
-      tools.ts                # createBookingTools(businessId)
-      run-agent.ts            # tool loop, streaming, persistence
+      constants.ts            # SIMULATOR_TIMEZONE, SIMULATOR_CUSTOMER_PHONE
+      chats.ts                # saved chats for the simulator (server-only)
+      ndjson.ts               # NDJSON stream reader (+ test)
+    agent/
+      config.ts               # agentMode(), Anthropic client, model, effort, fallback params
+      business.ts             # loadAgentBusiness: what both agents know about a business
+      system-prompt.ts        # system prompt + per-turn note (+ test)
+      tools.ts                # createAgentTools(ctx): zod-defined strict tools
+      run-agent.ts            # runAgentTurn: the tool loop, persistence, events, lock
+      history.ts              # rows ↔ API messages ↔ chat bubbles, pure (+ test)
+      conversations.ts        # conversation + message rows, per-conversation lock (server-only)
+      agent.db.test.ts        # the loop against a fake Claude client
+      scripted/
+        parse.ts              # pure message parsing: dates, times, party size, services, names, intents (+ test)
+        script.ts             # the scripted conversation: ScriptState + runScript()
+        run-scripted.ts       # runScriptedTurn: same events and history as runAgentTurn
+        scripted.db.test.ts   # whole conversations against the real booking engine
     booking/
       availability.ts         # pure slot rules (+ availability.test.ts)
       bookings.ts             # DB operations, server-only (+ bookings.db.test.ts)
@@ -141,7 +154,8 @@ src/
                               # † use-voice-call.ts
   types/
     domain.ts                 # zod enums for the String status/category columns
-    simulator.ts              # SimulatorBusiness, ChatMessage, MessageStatus
+    simulator.ts              # SimulatorBusiness, SimulatorChat, ChatMessage, MessageStatus
+    agent-events.ts           # AgentEvent stream + AgentChatRequest body
 .env                          # DATABASE_URL (not committed)
 .env.example
 vitest.config.mts             # "unit" and "db" test projects
@@ -150,15 +164,19 @@ src/test/                     # test support: server-only stub, test-DB global s
 
 ## Architecture
 
-### Simulator state (Phase 2)
+### Simulator state
 
-`SimulatorProvider` (in the `/simulator` layout) holds one conversation per business: messages, pending replies (which drive "typing…") and the unread count. `send(slug, text)` runs the delivery timeline: sending → sent → delivered → read with typing → reply. Each business's greeting is the first message in its chat. It is UI-only, so in Phase 4 it must not be sent to the model as history. All simulator times use `SIMULATOR_TIMEZONE`. Phase 4 replaces the placeholder timeline in `send` with the agent endpoint below and loads history from the DB.
+The `/simulator` layout loads each business's saved chat (`src/lib/simulator/chats.ts`) into `SimulatorProvider`. The provider holds one conversation per business: messages, a `typing` flag and the unread count. Each business's greeting is the first bubble in its chat. It is UI-only and never sent to the model; the system prompt tells the agent it already greeted. All simulator times use `SIMULATOR_TIMEZONE`.
+
+`send(slug, text)` queues the message. Each conversation has one request in flight at a time, and anything typed meanwhile goes out together in the next request. Ticks follow the server: sending → sent (response opened) → delivered (`accepted`) → read (`typing`). Failures show a red tick and an amber notice bubble (`kind: "notice"`, client-only) with the server's message.
 
 ### Chat flow
 
-1. The simulator posts `{ businessSlug, conversationId, text, channel }` to `/api/agent/chat`.
-2. The route handler loads the business and persona and builds the system prompt. It then loads the stored history and runs the agent with tools bound to that business.
-3. The reply text streams back to the simulator. Messages and any booking changes are saved to the DB.
+1. The simulator posts `{ slug, texts }` (`AgentChatRequest`) to `/api/agent/chat`. The route returns 400 for bad input, 503 when no API key is set, and 404 for an unknown business. Otherwise it streams `AgentEvent`s as NDJSON: `accepted` → `typing` → `message`* → `done`, or `error`.
+2. `agentMode()` picks the agent. `AGENT_MODE` in `.env.local` can be `auto` (the default: Claude when a key is set, scripted otherwise), `scripted` or `claude`. The route returns 503 only when `claude` is forced without a key.
+   - **Claude:** `runAgentTurn` (`src/lib/agent/run-agent.ts`) takes a per-conversation lock, saves the customer's messages, then calls Claude with the business's tools. It repeats until Claude stops calling tools, at most `MAX_TOOL_ROUNDS` times, saving each step and emitting each reply bubble as soon as it exists.
+   - **Scripted:** `runScriptedTurn` takes the same lock and saves the same rows. It runs `runScript()` against the conversation's saved `agentState` and sends each reply after a typing delay. Its replies are plain assistant text, so a conversation can carry on later with Claude.
+3. The turn keeps running if the browser disconnects, so a booking in progress still completes. The simulator sees the result next time it loads, since chats come from the DB.
 4. The dashboard picks up new bookings and messages. The mechanism (polling or server-sent events) is chosen in the dashboard phase.
 
 ### Voice call flow
@@ -172,22 +190,25 @@ src/test/                     # test support: server-only stub, test-DB global s
 - **Customers** are shared across businesses, keyed by a fictional phone number, the way one WhatsApp number talks to many businesses. The simulator user is the customer `+923000000000`, with no name until the agent asks for it.
 - **Service capacity** is how many bookings of that service may overlap. Restaurant tables are services (`Table for 4`) whose capacity is the number of tables of that size and whose `partySize` is the seat count. There is no cross-service staff model, so a checkup and a cleaning never block each other.
 - **Working hours** allow one interval per weekday, stored as local `"HH:mm"`. A missing weekday means closed.
-- **Messages** store the Anthropic content blocks verbatim as JSON in `content`, plus a plain-text `text` for the UI. Tool-result messages have empty `text`.
+- **Messages** store the Anthropic content blocks verbatim as JSON in `content`, plus the `text` the chat UI shows (empty for tool results and system notes). `position` (unique per conversation) is the replay order. Never sort messages by `createdAt`.
 - **Booking source** is `agent` or `staff`. Seed data and dashboard bookings are `staff`.
 - **Voice calls** are their own `Conversation` with channel `voice`.
 
 ## Claude agent conventions
 
-- **Model:** `claude-opus-5-5`, read from `ANTHROPIC_MODEL` with that default, set in `src/lib/agent/config.ts`. Model IDs never take a date suffix.
+- **Model:** read from `ANTHROPIC_MODEL`, defaulting to `claude-opus-5-5` (`src/lib/agent/config.ts`). For development and demos the user runs `claude-haiku-5-5`, set in `.env.local`, because it's about 40x cheaper per message. Keep the code working on both. Model IDs never take a date suffix.
 - **Thinking and effort:** thinking is always on for this model. Never send `thinking: { type: "disabled" }` or `budget_tokens`; both return a 400. Control latency with `output_config: { effort: "low" }`, and raise it only if the agent makes booking mistakes. Voice especially needs low latency.
-- **Streaming:** stream every agent call. Use the SDK helpers (`finalMessage()`, the runner's streaming mode) rather than hand-wrapping events in promises.
-- **Tool loop:** use `client.beta.messages.toolRunner` with tools defined via `betaZodTool` (from `@anthropic-ai/sdk/helpers/beta/zod`). Switch to a manual `client.messages.stream` loop only if the runner can't provide something we need, such as saving each step as it happens.
-- **Refusal fallback:** on by default with `betas: ["server-side-fallback-2026-07-01"]` and `fallbacks: "default"`. Always check `stop_reason` (`refusal`, `max_tokens`) before reading content.
+- **Streaming:** stream every agent call with `client.beta.messages.stream(...).finalMessage()`. Don't hand-wrap stream events in promises.
+- **Tool loop:** a manual loop in `runAgentTurn`, not the SDK's Tool Runner, because every step has to be saved as it happens and each reply emitted as a chat bubble. Run all of one response's tool calls, then send every result back in one user message.
+- **Tools:** defined once in zod in `src/lib/agent/tools.ts`. That schema becomes the `strict: true` JSON Schema sent to Claude (without `$schema` or numeric bounds) and validates the input Claude sends back. Service names are a per-business enum. `eager_input_streaming` is off because the inputs are tiny.
+- **Refusal fallback:** `refusalFallbackParams(model)` adds `betas: ["server-side-fallback-2026-07-01"]` and `fallbacks: "default"` only for models that support it (Opus 5.5, Sonnet 5.5, …). Claude Haiku 5.5 has no server-side fallback, so it gets neither. Always check `stop_reason` (`refusal`, `max_tokens`) before reading content.
 - **Tool choice:** `tool_choice` stays `auto`, because `any` and `tool` return a 400 on this model. Assistant prefill is also unsupported. Steer behaviour through the system prompt.
-- **Tenant isolation:** tools are built per request by `createBookingTools(businessId)`. The business ID comes from the server, never from tool input. An agent can only read and change its own business's data.
-- **Thin tools:** a tool's `run` function calls `src/lib/booking/*` and holds no business logic itself. It returns compact JSON strings. On failure it returns a short error message the agent can relay to the customer ("That slot was just taken").
-- **Prompt caching:** the system prompt (persona, services, hours, rules) is deterministic for a business, so cache it. Never put the current time in it. Send "now", in the business timezone, as a mid-conversation `role: "system"` message after each user turn.
-- **History:** save each assistant message's `content` array verbatim, thinking blocks included, and replay it unchanged. History is append-only: never edit, drop or reorder past turns. Doing so invalidates thinking blocks and the cache.
+- **Tenant isolation:** tools are built per turn by `createAgentTools(ctx)`, with the business, customer and conversation fixed on the server. The model can never choose them, so an agent can only read and change its own business's data, for its own customer.
+- **Thin tools:** a tool's `run` calls `src/lib/booking/*` and holds no business logic itself. It returns compact JSON. A `BookingError` is an expected outcome, returned as `{ ok: false, error, message, alternative_times }` *without* `is_error`. `is_error: true` is only for invalid input or real failures.
+- **Prompt caching:** the system prompt (`buildSystemPrompt`) depends only on the business, and the top-level `cache_control: { type: "ephemeral" }` caches the prefix. Never put the time or customer details in it. Those go in the per-turn note (`buildTurnNote`), a mid-conversation `role: "system"` message after the customer's messages.
+- **History:** stored rows replay verbatim, thinking blocks and fallback blocks included, and history is append-only. Editing, dropping or reordering past turns invalidates thinking blocks and the cache. `toApiMessages` merges consecutive user rows into one turn, deterministically.
+- **Failure-safe writes:** the turn's system note is saved together with the first assistant response, and a tool-using response is saved together with its tool results. A failure at any point therefore leaves a history the API accepts, and the next turn merges the unanswered messages with the new ones.
+- **Refusals:** on `stop_reason: "refusal"`, don't run that response's tools. Save the response, and show `REFUSAL_REPLY` as the bubble text.
 - **SDK usage:** use SDK types (`Anthropic.MessageParam`, `Anthropic.Message`, …) instead of redefining them. Handle errors with the typed SDK classes (`Anthropic.RateLimitError`, …), never by matching message strings.
 - **No invented facts:** the agent never makes up prices, slots or policies. Everything comes from tools or the system prompt. Before booking, it confirms service, date, time and the customer's name.
 
@@ -204,15 +225,40 @@ Everything that reads or changes bookings goes through `src/lib/booking/bookings
 - **Errors** are `BookingError` with a `code`, a `message` the agent can relay as-is, and `alternatives` (up to 3 nearest open "HH:mm" times). Anything else thrown is a bug, not a booking outcome.
 - **Dates and times in and out** are local `"YYYY-MM-DD"` / `"HH:mm"` in the business timezone. `BookingSummary` is the shape to hand to the agent and the UI.
 
-### Agent tools (planned)
+### Scripted agent
 
-`get_business_info`, `list_services`, `check_availability` (service, date or date range, party size), `create_booking`, `find_customer_bookings`, `reschedule_booking`, `cancel_booking`, `request_human_handoff`.
+A rule-based stand-in for Claude, so the demo runs without an API key. Keep it honest: it only understands what `parse.ts` can read.
+
+- **Decision order** (`ScriptRun.run`):
+  1. A request for a person → handoff.
+  2. Yes to a pending confirmation → do it.
+  3. No, or new details, at a confirmation → change the draft or abort.
+  4. Picking a booking from a numbered list.
+  5. cancel, reschedule or "my bookings".
+  6. Questions about prices, hours or location → answer, then re-ask the pending question.
+  7. Booking details, or an answer to our question → fill the draft and `advance()`.
+  8. Greeting, thanks, then a fallback.
+- **`advance()`** asks for the first missing piece: table from party size, service, party size, date, time, name, confirmation. It checks real availability before offering or accepting a time; full times get the nearest alternatives.
+- **Ambiguous times** ("at 5") resolve to the reading inside opening hours, preferring PM. A bare number counts as a time or party size only when we just asked for one.
+- **State** (`ScriptState`, zod-validated) is saved as JSON in `Conversation.agentState`. A bad or missing value just means "idle".
+- **New services:** add their everyday words to `SERVICE_SYNONYMS` in `parse.ts`; otherwise only the service's exact name is recognised.
+
+### Agent tools
+
+Services, prices, hours and house rules are in the system prompt, so there are no tools for them.
+
+- `check_availability(service, date)`: open "HH:mm" times for a day.
+- `find_next_available(service)`: the next six open times from now on.
+- `create_booking(service, date, time, customer_name, party_size?, notes?)`: also saves the customer's name.
+- `list_my_bookings()`: this customer's upcoming bookings, with their `booking_id`s.
+- `reschedule_booking(booking_id, date, time)` / `cancel_booking(booking_id)`.
+- `request_human_handoff(reason)`: sets the conversation's status to `handoff`.
 
 ## Coding conventions
 
 - **TypeScript:** strict mode, no `any`. Use `unknown` plus zod at every boundary: request bodies, tool inputs and JSON columns.
 - **Server vs client:** Server Components by default. Add `"use client"` only on interactive leaf components. Any file that imports Prisma or the Anthropic SDK also imports `"server-only"`.
-- **Data access:** reads happen in Server Components. Dashboard mutations go through Server Actions. The streaming agent endpoint is the only route handler. App code imports `db` from `@/lib/db`; types come from `@/generated/prisma/client`. The seed script builds its own client, because `server-only` modules can't load outside Next.js.
+- **Data access:** reads happen in Server Components. Dashboard mutations go through Server Actions. The streaming agent endpoint (`/api/agent/chat`) is the only route handler. App code imports `db` from `@/lib/db`; types come from `@/generated/prisma/client`. The seed script builds its own client, because `server-only` modules can't load outside Next.js.
 - **Cache Components:** bookings and conversations change constantly, so never wrap them in `"use cache"`. Put each live read in an async component inside `<Suspense>` with a fallback, and call `await connection()` (from `next/server`) before the query. `src/app/page.tsx` shows the pattern. Without it, `next build` fails or bakes stale data into the page. After a mutation, refresh with the revalidation APIs described in the bundled Next.js docs.
 - **Suspense per page:** a layout's `<Suspense>` covers page loads but not client navigation below that layout. A page that awaits `params`/`searchParams` or reads live data needs its own `<Suspense>` with a fallback shaped like the page, as in `src/app/simulator/[slug]/page.tsx`. In dev, Next.js logs an "instant navigation" error in the browser console when one is missing.
 - **Route params:** `params` and `searchParams` are Promises and must be awaited. Type pages and layouts with the global `PageProps<"/route">` / `LayoutProps<"/route">` helpers.
@@ -226,7 +272,7 @@ Everything that reads or changes bookings goes through `src/lib/booking/bookings
 - **WhatsApp look:** built from Tailwind theme tokens (`wa-*` in `globals.css`, e.g. `bg-wa-bubble-out`, `text-wa-meta`) with light and dark variants, never hard-coded hex in components. Use our own lucide icons. Don't ship WhatsApp or Meta logos. The simulator's dark mode toggles a `dark` class on the phone wrapper only, not on the whole page.
 - **Message formatting:** agent replies use WhatsApp syntax (`*bold*`, `_italic_`, `~strike~`), never Markdown. Render text through `FormattedText`, and strip it for previews with `stripWhatsAppFormatting`.
 - **Tests:** pure logic (slot rules, timezone helpers, formatting) gets Vitest unit tests (`*.test.ts`). Code that needs the database gets `*.db.test.ts` files in the "db" project. Those run one file at a time against `prisma/test.db`, which is rebuilt from `prisma/migrations` on every run and never touches the dev database. DB tests pass a fixed `now` to every booking function. UI is verified by running the app.
-- **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds secrets (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) and is read only by Next.js. Neither is committed. Keep `.env.example` current.
+- **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds `AGENT_MODE`, `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL`, and is read only by Next.js. Neither is committed. Keep `.env.example` current.
 
 ## Demo rules
 

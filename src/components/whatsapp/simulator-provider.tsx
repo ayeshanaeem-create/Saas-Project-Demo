@@ -1,19 +1,20 @@
 "use client";
 
-import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { createContext, use, useCallback, useMemo, useReducer, useRef, type ReactNode } from "react";
 
-import { placeholderReply } from "@/lib/simulator/placeholder-replies";
-import type { ChatMessage, MessageStatus, SimulatorBusiness } from "@/types/simulator";
+import { readNdjson } from "@/lib/simulator/ndjson";
+import type { AgentChatRequest, AgentEvent } from "@/types/agent-events";
+import type { ChatMessage, MessageStatus, SimulatorBusiness, SimulatorChat } from "@/types/simulator";
 
-// Client-side state for the simulator phone: one conversation per business.
-// It lives in the /simulator layout, so it survives moving between the chat list
-// and a chat. Phase 2 answers with placeholder replies on a realistic timeline;
-// Phase 4 swaps `send` for the streaming agent endpoint and loads history from the DB.
+// Client-side state for the simulator phone: one conversation per business, seeded
+// from the DB by the /simulator layout. It lives in the layout, so it survives moving
+// between the chat list and a chat. Sending goes to POST /api/agent/chat, one request
+// per conversation at a time; messages typed meanwhile queue up and go together next.
 
 type Conversation = {
   messages: ChatMessage[];
-  /** Replies the business is still "typing". */
-  pendingReplies: number;
+  /** The business is composing a reply. */
+  typing: boolean;
   unread: number;
 };
 
@@ -25,13 +26,14 @@ type State = {
 
 type Action =
   | { type: "append"; slug: string; message: ChatMessage }
-  | { type: "status"; slug: string; id: string; status: MessageStatus }
-  | { type: "replyStarted"; slug: string }
-  | { type: "replyArrived"; slug: string; message: ChatMessage }
+  | { type: "status"; slug: string; ids: string[]; status: MessageStatus }
+  | { type: "readAll"; slug: string }
+  | { type: "typing"; slug: string; typing: boolean }
+  | { type: "received"; slug: string; message: ChatMessage }
   | { type: "opened"; slug: string }
   | { type: "closed"; slug: string };
 
-const STATUS_RANK: Record<MessageStatus, number> = { sending: 0, sent: 1, delivered: 2, read: 3 };
+const STATUS_RANK: Record<MessageStatus, number> = { sending: 0, sent: 1, delivered: 2, read: 3, failed: 4 };
 
 function updateConversation(state: State, slug: string, update: (c: Conversation) => Conversation): State {
   const conversation = state.conversations[slug];
@@ -39,34 +41,41 @@ function updateConversation(state: State, slug: string, update: (c: Conversation
   return { ...state, conversations: { ...state.conversations, [slug]: update(conversation) } };
 }
 
+/** Ticks only move forward; "failed" overrides anything short of "read". */
+const advance = (current: MessageStatus | undefined, next: MessageStatus) =>
+  STATUS_RANK[current ?? "sending"] < STATUS_RANK[next] && current !== "read" ? next : (current ?? next);
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "append":
       return updateConversation(state, action.slug, (c) => ({ ...c, messages: [...c.messages, action.message] }));
 
     case "status":
-      // Like WhatsApp, a status applies to the message and every earlier outgoing message,
-      // and ticks only ever move forward.
-      return updateConversation(state, action.slug, (c) => {
-        const target = c.messages.findIndex((m) => m.id === action.id);
-        if (target === -1) return c;
-        return {
-          ...c,
-          messages: c.messages.map((m, i) =>
-            i <= target && m.direction === "outgoing" && STATUS_RANK[m.status ?? "sending"] < STATUS_RANK[action.status]
-              ? { ...m, status: action.status }
-              : m,
-          ),
-        };
-      });
-
-    case "replyStarted":
-      return updateConversation(state, action.slug, (c) => ({ ...c, pendingReplies: c.pendingReplies + 1 }));
-
-    case "replyArrived":
       return updateConversation(state, action.slug, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          action.ids.includes(m.id) ? { ...m, status: advance(m.status, action.status) } : m,
+        ),
+      }));
+
+    case "readAll":
+      // Like WhatsApp: when the business reads, every delivered message shows blue ticks.
+      return updateConversation(state, action.slug, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          m.direction === "outgoing" && m.status && m.status !== "failed" && m.status !== "sending"
+            ? { ...m, status: "read" }
+            : m,
+        ),
+      }));
+
+    case "typing":
+      return updateConversation(state, action.slug, (c) => ({ ...c, typing: action.typing }));
+
+    case "received":
+      return updateConversation(state, action.slug, (c) => ({
+        ...c,
         messages: [...c.messages, action.message],
-        pendingReplies: Math.max(0, c.pendingReplies - 1),
         unread: state.openSlug === action.slug ? 0 : c.unread + 1,
       }));
 
@@ -78,18 +87,31 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function initialState({ businesses, startedAt }: { businesses: SimulatorBusiness[]; startedAt: string }): State {
+type InitArgs = { businesses: SimulatorBusiness[]; chats: Record<string, SimulatorChat>; startedAt: string };
+
+function initialState({ businesses, chats, startedAt }: InitArgs): State {
   const conversations: Record<string, Conversation> = {};
   for (const business of businesses) {
-    conversations[business.slug] = {
-      // The business's greeting opens every chat. It is UI-only and never sent to the agent.
-      messages: [{ id: `greeting-${business.slug}`, direction: "incoming", text: business.greeting, sentAt: startedAt }],
-      pendingReplies: 0,
-      unread: 0,
+    const chat = chats[business.slug];
+    // The business's greeting opens every chat. It is UI-only and never sent to the agent.
+    const greeting: ChatMessage = {
+      id: `greeting-${business.slug}`,
+      direction: "incoming",
+      text: business.greeting,
+      sentAt: chat?.startedAt ?? startedAt,
     };
+    conversations[business.slug] = { messages: [greeting, ...(chat?.messages ?? [])], typing: false, unread: 0 };
   }
   return { conversations, openSlug: null };
 }
+
+const notice = (text: string): ChatMessage => ({
+  id: crypto.randomUUID(),
+  direction: "incoming",
+  kind: "notice",
+  text,
+  sentAt: new Date().toISOString(),
+});
 
 type SimulatorContextValue = {
   businesses: SimulatorBusiness[];
@@ -105,65 +127,91 @@ const SimulatorContext = createContext<SimulatorContextValue | null>(null);
 
 export function SimulatorProvider({
   businesses,
+  chats,
   startedAt,
   children,
-}: {
-  businesses: SimulatorBusiness[];
-  startedAt: string;
-  children: ReactNode;
-}) {
-  const [state, dispatch] = useReducer(reducer, { businesses, startedAt }, initialState);
+}: InitArgs & { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, { businesses, chats, startedAt }, initialState);
 
-  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const later = useCallback((ms: number, run: () => void) => {
-    const timer = setTimeout(() => {
-      timers.current.delete(timer);
-      run();
-    }, ms);
-    timers.current.add(timer);
-  }, []);
-  useEffect(() => {
-    const pending = timers.current;
-    return () => {
-      for (const timer of pending) clearTimeout(timer);
-      pending.clear();
-    };
-  }, []);
+  const queues = useRef(new Map<string, { id: string; text: string }[]>());
+  const inFlight = useRef(new Set<string>());
 
-  const businessesBySlug = useMemo(() => new Map(businesses.map((b) => [b.slug, b])), [businesses]);
+  const flush = useCallback(async function flushQueue(slug: string): Promise<void> {
+    if (inFlight.current.has(slug)) return;
+    const batch = queues.current.get(slug) ?? [];
+    if (batch.length === 0) return;
+    queues.current.set(slug, []);
+    inFlight.current.add(slug);
+
+    const ids = batch.map((m) => m.id);
+    let accepted = false;
+    let finished = false;
+    try {
+      const body: AgentChatRequest = { slug, texts: batch.map((m) => m.text) };
+      const response = await fetch("/api/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok || !response.body) {
+        const problem = (await response.json().catch(() => null)) as { error?: string } | null;
+        dispatch({ type: "status", slug, ids, status: "failed" });
+        dispatch({ type: "append", slug, message: notice(problem?.error ?? "The assistant couldn't reply.") });
+        return;
+      }
+      dispatch({ type: "status", slug, ids, status: "sent" });
+
+      await readNdjson(response.body, (value) => {
+        const event = value as AgentEvent;
+        switch (event.type) {
+          case "accepted":
+            accepted = true;
+            dispatch({ type: "status", slug, ids, status: "delivered" });
+            break;
+          case "typing":
+            dispatch({ type: "readAll", slug });
+            dispatch({ type: "typing", slug, typing: true });
+            break;
+          case "message":
+            dispatch({ type: "received", slug, message: event.message });
+            break;
+          case "done":
+            finished = true;
+            break;
+          case "error":
+            finished = true;
+            dispatch({ type: "append", slug, message: notice(event.message) });
+            break;
+        }
+      });
+      if (!finished) {
+        dispatch({ type: "append", slug, message: notice("The connection dropped before the assistant finished.") });
+      }
+    } catch (error) {
+      console.warn("[simulator] send failed", error);
+      if (!accepted) dispatch({ type: "status", slug, ids, status: "failed" });
+      dispatch({ type: "append", slug, message: notice("Couldn't reach the assistant. Check the dev server is running.") });
+    } finally {
+      dispatch({ type: "typing", slug, typing: false });
+      inFlight.current.delete(slug);
+      if ((queues.current.get(slug) ?? []).length > 0) void flushQueue(slug);
+    }
+  }, []);
 
   const send = useCallback(
     (slug: string, text: string) => {
-      const business = businessesBySlug.get(slug);
       const body = text.trim();
-      if (!business || !body) return;
-
-      const now = new Date();
+      if (!body) return;
       const id = crypto.randomUUID();
       dispatch({
         type: "append",
         slug,
-        message: { id, direction: "outgoing", text: body, sentAt: now.toISOString(), status: "sending" },
+        message: { id, direction: "outgoing", text: body, sentAt: new Date().toISOString(), status: "sending" },
       });
-
-      // Placeholder timeline: sent → delivered → read + typing → reply.
-      const reply = placeholderReply(business, body, now);
-      const typingMs = Math.min(3500, Math.max(1200, 400 + reply.length * 15));
-      later(250, () => dispatch({ type: "status", slug, id, status: "sent" }));
-      later(700, () => dispatch({ type: "status", slug, id, status: "delivered" }));
-      later(1100, () => {
-        dispatch({ type: "status", slug, id, status: "read" });
-        dispatch({ type: "replyStarted", slug });
-      });
-      later(1100 + typingMs, () =>
-        dispatch({
-          type: "replyArrived",
-          slug,
-          message: { id: crypto.randomUUID(), direction: "incoming", text: reply, sentAt: new Date().toISOString() },
-        }),
-      );
+      queues.current.set(slug, [...(queues.current.get(slug) ?? []), { id, text: body }]);
+      void flush(slug);
     },
-    [businessesBySlug, later],
+    [flush],
   );
 
   const open = useCallback((slug: string) => dispatch({ type: "opened", slug }), []);

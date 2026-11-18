@@ -91,6 +91,7 @@ model Conversation {
   customerId String
   channel    String // Channel
   status     String   @default("open") // ConversationStatus
+  agentState String? // JSON: the scripted agent's place in the conversation (unused by Claude)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -105,14 +106,15 @@ model Conversation {
 model Message {
   id             String   @id @default(cuid())
   conversationId String
+  position       Int // 0, 1, 2… within the conversation; the replay order for the agent
   role           String // MessageRole
   content        String // JSON: the Anthropic content blocks, stored verbatim
-  text           String // plain-text rendering for the UI; empty for tool results
+  text           String // what the chat UI shows; empty for tool results and system notes
   createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId, createdAt])
+  @@unique([conversationId, position])
 }
 
 model Booking {
