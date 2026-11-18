@@ -1,4 +1,4 @@
-import type { BusinessCategory } from "../../src/types/domain";
+import type { BusinessCategory } from "@/types/domain";
 
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
 

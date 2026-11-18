@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useCallback, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 
 import { readNdjson } from "@/lib/simulator/ndjson";
 import type { AgentChatRequest, AgentEvent } from "@/types/agent-events";
@@ -226,6 +226,20 @@ export function SimulatorProvider({
 
   const open = useCallback((slug: string) => dispatch({ type: "opened", slug }), []);
   const close = useCallback((slug: string) => dispatch({ type: "closed", slug }), []);
+
+  // The demo page (/demo/[slug]) embeds the simulator in an iframe; its scenario buttons
+  // post { type: "bookmate:say", slug, text } to send a message as if typed.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { type?: unknown; slug?: unknown; text?: unknown } | null;
+      if (data?.type === "bookmate:say" && typeof data.slug === "string" && typeof data.text === "string") {
+        send(data.slug, data.text);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [send]);
 
   const value = useMemo(
     () => ({ businesses, startedAt: Date.parse(startedAt), state, send, addCall, open, close }),

@@ -170,6 +170,17 @@ describe("booking", () => {
     expect(replies[1]).toMatch(/What time suits you\?$/);
   });
 
+  it("offers to book after a price question, and starts the booking on yes", async () => {
+    expect(await send("how much is a facial?")).toEqual(["*Facial* is Rs 3,500 and takes 1 hr. Would you like to book one?"]);
+    expect(await send("yes")).toEqual([
+      "Which day would you like? The next free times are today at 11:00 AM, 11:30 AM or 12:00 PM.",
+    ]);
+    // Giving a day and time straight away also keeps the offered service.
+    await send("how much is a facial?");
+    const [reply] = await send("tomorrow at 2pm");
+    expect(reply).toMatch(/^Great! What name|^Just to confirm: \*Facial\*/);
+  });
+
   it("picks a table from the party size", async () => {
     await db.customer.update({ where: { id: customerId }, data: { name: "Omar" } });
     const [confirm] = await send("table for 5 tomorrow at 8pm", restaurantId);

@@ -100,12 +100,12 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
             Dashboard
           </Link>
           <Link
-            href={`/simulator/${business.slug}`}
+            href={`/demo/${business.slug}`}
             className={buttonVariants({ variant: "outline", size: "sm" })}
-            aria-label={`Chat with ${business.name}`}
+            aria-label={`Try the ${business.name} demo`}
           >
             <MessageCircle aria-hidden />
-            Chat
+            Try demo
           </Link>
         </span>
       </CardFooter>

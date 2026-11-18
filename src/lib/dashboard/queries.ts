@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { loadMessages } from "@/lib/agent/conversations";
 import { buildTranscript, type TranscriptItem } from "@/lib/dashboard/transcript";
 import { db } from "@/lib/db";
@@ -7,10 +8,12 @@ import { addDays, formatInZone, todayInZone, zonedDateTime } from "@/lib/time";
 import {
   bookingSourceSchema,
   bookingStatusSchema,
+  businessCategorySchema,
   channelSchema,
   conversationStatusSchema,
   type BookingSource,
   type BookingStatus,
+  type BusinessCategory,
   type Channel,
   type ConversationStatus,
 } from "@/types/domain";
@@ -23,6 +26,7 @@ export type DashboardBusiness = {
   slug: string;
   name: string;
   emoji: string;
+  category: BusinessCategory;
   tagline: string;
   timezone: string;
   currency: string;
@@ -62,19 +66,21 @@ export async function listBusinesses() {
 }
 
 export async function getBusinessBySlug(slug: string): Promise<DashboardBusiness | null> {
-  return db.business.findUnique({
+  const business = await db.business.findUnique({
     where: { slug },
     select: {
       id: true,
       slug: true,
       name: true,
       emoji: true,
+      category: true,
       tagline: true,
       timezone: true,
       currency: true,
       slotIntervalMin: true,
     },
   });
+  return business && { ...business, category: businessCategorySchema.parse(business.category) };
 }
 
 /** Bookings starting on `days` local days from `fromDate`, earliest first. */
@@ -92,27 +98,52 @@ export async function getBookingsBetween(
         lt: zonedDateTime(addDays(fromDate, days), "00:00", business.timezone),
       },
     },
-    include: { service: { select: { name: true } }, customer: { select: { name: true, phone: true } } },
+    include: bookingInclude,
     orderBy: [{ startAt: "asc" }, { createdAt: "asc" }],
   });
+  return rows.map((b) => toDashboardBooking(b, business, now));
+}
 
-  return rows.map((b) => {
-    const status = bookingStatusSchema.parse(b.status);
-    return {
-      id: b.id,
-      serviceName: b.service.name,
-      customerName: b.customer.name,
-      customerPhone: b.customer.phone,
-      date: formatInZone(b.startAt, business.timezone, "yyyy-MM-dd"),
-      time: formatInZone(b.startAt, business.timezone, "HH:mm"),
-      endTime: formatInZone(b.endAt, business.timezone, "HH:mm"),
-      partySize: b.partySize,
-      status,
-      source: bookingSourceSchema.parse(b.source),
-      notes: b.notes,
-      upcoming: status === "confirmed" && b.startAt > now,
-    };
+/** The agent's most recently made bookings (any date), newest first. */
+export async function getRecentAgentBookings(
+  business: DashboardBusiness,
+  limit: number,
+  now: Date = new Date(),
+): Promise<DashboardBooking[]> {
+  const rows = await db.booking.findMany({
+    where: { businessId: business.id, source: "agent" },
+    include: bookingInclude,
+    orderBy: { createdAt: "desc" },
+    take: limit,
   });
+  return rows.map((b) => toDashboardBooking(b, business, now));
+}
+
+const bookingInclude = {
+  service: { select: { name: true } },
+  customer: { select: { name: true, phone: true } },
+} as const;
+
+function toDashboardBooking(
+  b: Prisma.BookingGetPayload<{ include: typeof bookingInclude }>,
+  business: DashboardBusiness,
+  now: Date,
+): DashboardBooking {
+  const status = bookingStatusSchema.parse(b.status);
+  return {
+    id: b.id,
+    serviceName: b.service.name,
+    customerName: b.customer.name,
+    customerPhone: b.customer.phone,
+    date: formatInZone(b.startAt, business.timezone, "yyyy-MM-dd"),
+    time: formatInZone(b.startAt, business.timezone, "HH:mm"),
+    endTime: formatInZone(b.endAt, business.timezone, "HH:mm"),
+    partySize: b.partySize,
+    status,
+    source: bookingSourceSchema.parse(b.source),
+    notes: b.notes,
+    upcoming: status === "confirmed" && b.startAt > now,
+  };
 }
 
 export async function getOverview(business: DashboardBusiness, now: Date = new Date()) {

@@ -11,11 +11,16 @@ type Props = {
   /** First message in a run from the same side: gets the tail and extra top spacing. */
   startsGroup: boolean;
   timeZone: string;
+  /**
+   * A ready-made time ("4:41 PM") for statically prerendered previews: timezone formatting
+   * reads the clock internally, which Cache Components rejects during prerendering.
+   */
+  timeLabel?: string;
 };
 
-export function MessageBubble({ message, startsGroup, timeZone }: Props) {
+export function MessageBubble({ message, startsGroup, timeZone, timeLabel }: Props) {
   const outgoing = message.direction === "outgoing";
-  const time = formatMessageTime(new Date(message.sentAt), timeZone);
+  const time = timeLabel ?? formatMessageTime(new Date(message.sentAt), timeZone);
 
   return (
     <div

@@ -43,7 +43,7 @@ import {
 
 export const scriptStateSchema = z.object({
   flow: z.enum(["idle", "booking", "reschedule", "cancel"]),
-  awaiting: z.enum(["service", "party_size", "date", "time", "name", "confirm", "pick_booking", "confirm_cancel"]).nullable(),
+  awaiting: z.enum(["service", "party_size", "date", "time", "name", "confirm", "pick_booking", "confirm_cancel", "book_offer"]).nullable(),
   draft: z.object({
     service: z.string().optional(),
     partySize: z.number().optional(),
@@ -191,6 +191,29 @@ class ScriptRun {
       return this.finish();
     }
 
+    // "How much is a facial?": the price of that service, then an offer (not a push) to book it.
+    const priceOf = details.service ? this.service(details.service) : undefined;
+    if (intents.has("prices") && priceOf && !intents.has("book") && !details.date && !details.time && s.flow !== "reschedule") {
+      const price = priceOf.price > 0 ? formatPrice(priceOf.price, this.business.currency) : "free";
+      this.say(`*${priceOf.name}* is ${price} and takes ${formatDuration(priceOf.durationMin)}. Would you like to book one?`);
+      this.state = { ...idle(), awaiting: "book_offer", draft: { service: priceOf.name } };
+      return this.finish();
+    }
+
+    // Answering "Would you like to book one?": yes starts that booking; no drops it.
+    if (s.awaiting === "book_offer" && !this.hasAny(details)) {
+      if (isYes(text)) {
+        this.state = { ...idle(), flow: "booking", draft: { ...s.draft } };
+        await this.advance();
+        return this.finish();
+      }
+      if (isNo(text)) {
+        this.say("No problem! Anything else I can help with?");
+        this.reset();
+        return this.finish();
+      }
+    }
+
     // Questions: answer, then pick up where we were.
     const wantsBooking =
       intents.has("book") || details.service !== null || details.time !== null || details.partySize !== null;
@@ -203,9 +226,13 @@ class ScriptRun {
     // Booking details, or an answer to the question we asked.
     const answeringUs = s.awaiting !== null && SLOT_QUESTIONS.has(s.awaiting);
     if (wantsBooking || answeringUs || (details.date !== null && s.flow !== "idle")) {
-      if (s.flow === "idle" || s.flow === "cancel") this.state = { ...idle(), flow: "booking" };
+      if (s.flow === "idle" || s.flow === "cancel") {
+        // "Tomorrow at 5" right after a price offer books the service we offered.
+        this.state = { ...idle(), flow: "booking", draft: s.awaiting === "book_offer" ? { ...s.draft } : {} };
+      }
       const changed = this.apply(details);
-      if (!changed && answeringUs) this.say("Sorry, I didn't quite catch that.");
+      // A bare "yes" to "Which day?" just means "go on": ask again without apologising.
+      if (!changed && answeringUs && !isYes(text)) this.say("Sorry, I didn't quite catch that.");
       this.state.awaiting = null;
       await this.advance();
       return this.finish();
@@ -317,7 +344,7 @@ class ScriptRun {
         limit: 3,
       });
       const hint = next.length
-        ? ` The next free times are ${this.joinOr(next.map((n) => `${this.shortDay(n.date)} ${formatClockTime(n.time)}`))}.`
+        ? ` The next free times are ${this.nextTimes(next)}.`
         : "";
       this.say(`Which day would you like${rescheduling ? " to move it to" : ""}?${hint}`);
       return;
@@ -337,7 +364,7 @@ class ScriptRun {
       s.awaiting = "date";
       const next = await findNextAvailableSlots({ businessId: this.business.id, serviceId: service.id, now: this.turn.now, limit: 3 });
       const hint = next.length
-        ? ` The next free times are ${this.joinOr(next.map((n) => `${this.shortDay(n.date)} ${formatClockTime(n.time)}`))}.`
+        ? ` The next free times are ${this.nextTimes(next)}.`
         : "";
       this.say(`${service.name} is fully booked ${label === "today" ? "for the rest of today" : `on ${label}`}.${hint} Which day suits you?`);
       return;
@@ -686,6 +713,18 @@ class ScriptRun {
     if (date === this.today) return "today";
     if (date === addDays(this.today, 1)) return "tomorrow";
     return this.weekdayName(date);
+  }
+
+  /** "today at 11:00 AM, 11:30 AM or 12:00 PM", or "today at 8:30 PM or tomorrow at 11:00 AM". */
+  private nextTimes(next: { date: string; time: string }[]): string {
+    const days: { date: string; times: string[] }[] = [];
+    for (const { date, time } of next) {
+      const last = days.at(-1);
+      if (last?.date === date) last.times.push(formatClockTime(time));
+      else days.push({ date, times: [formatClockTime(time)] });
+    }
+    if (days.length === 1) return `${this.shortDay(days[0]!.date)} at ${this.joinOr(days[0]!.times)}`;
+    return this.joinOr(days.map((d) => `${this.shortDay(d.date)} at ${d.times.join(", ")}`));
   }
 
   private joinOr(items: string[]): string {

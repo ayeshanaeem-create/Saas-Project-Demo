@@ -25,7 +25,8 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 
   The overview, bookings and conversations pages refresh every 5 seconds, so simulator activity shows up by itself.
 - **Phase 6 (voice calls): done.** The phone icon in a chat opens `/simulator/[slug]/call`: ringing, the spoken greeting, then listen → agent → speak until hang-up. There are live captions, Mute and Interrupt, a call bubble in the chat afterwards, and each call is its own voice conversation on the dashboard. Tested in headless Edge with fake speech APIs; real speech needs Chrome or Edge with a microphone and an internet connection.
-- Next: Phase 7, demo polish.
+- **Phase 7 (demo polish): done.** The landing page is at `/`. The live demo at `/demo/[slug]` shows the simulator in an iframe beside a live panel: scenario buttons, "Booked by the agent" and the latest transcript. "Reset demo" (in the demo top bar and the dashboard sidebar) restores the seed data. There are error and 404 pages, an app icon and a README.
+- All seven planned phases are done. The Claude agent still hasn't run against the live API, because the user has no key yet.
 
 ## Product vision
 
@@ -97,20 +98,22 @@ prisma7.config.ts             # Prisma CLI config: schema path, migrations, seed
 prisma/
   schema.prisma               # source of truth for the data model
   migrations/
-  seed.ts                     # resets the DB to the demo state
-  seed-data/                  # one file per demo business + customers.ts
+  seed.ts                     # `npm run db:seed`: thin wrapper around src/lib/demo/seed.ts
 src/
   generated/prisma/           # generated Prisma client (gitignored)
   app/
-    page.tsx                  # temporary business list; replaced by the landing page in Phase 7
-    (marketing)/page.tsx      # † BookMate AI landing page
-    demo/[slug]/page.tsx      # † split view: phone simulator + live dashboard
+    page.tsx                  # landing page (hero, how it works, features, demo businesses)
+    error.tsx / not-found.tsx # app-wide error (with retry) and 404 pages
+    icon.svg                  # app icon
+    demo/
+      page.tsx                # redirects to the first business
+      [slug]/page.tsx         # live demo: simulator iframe + live panel (scenarios, agent bookings, transcript)
     simulator/
       layout.tsx              # phone shell + SimulatorProvider (chat state survives navigation)
       page.tsx                # chat list
       [slug]/page.tsx         # one chat (own <Suspense> around params)
       [slug]/call/page.tsx    # voice call screen
-      not-found.tsx
+      not-found.tsx, error.tsx  # both render inside the phone
     dashboard/
       page.tsx                # redirects to the first business
       not-found.tsx
@@ -132,7 +135,8 @@ src/
                               #   formatted-text, business-avatar, chat-skeleton, call-screen
     dashboard/                # nav, booking list/row, new-booking dialog, cancel button, service/hours/
                               #   persona editors, conversation list, transcript view, badges, auto-refresh
-    marketing/                # †
+    marketing/                # chat-preview (static hero conversation)
+    demo/                     # scenario-buttons (post into the iframe), reset-demo-button
   lib/
     db.ts                     # Prisma client singleton (server-only)
     businesses.ts             # business queries (server-only)
@@ -140,6 +144,13 @@ src/
     format.ts                 # price and duration formatting
     whatsapp-format.ts        # *bold* _italic_ ~strike~ ```mono``` parser (+ test)
     utils.ts                  # shadcn's cn()
+    demo/
+      seed.ts                 # seedDemo(prisma): wipe + recreate demo data (CLI seed and Reset demo)
+      seed-data/              # one file per demo business + customers.ts
+      scenarios.ts            # suggested demo messages per business category
+      actions.ts              # resetDemoAction (Server Action)
+      constants.ts            # DEMO_PHONE_ID
+      demo.db.test.ts         # seed is repeatable; every scenario gets a real answer
     dashboard/
       queries.ts              # read models for the dashboard (server-only)
       schemas.ts              # form validation + FormState, phone normalizing (+ test)
@@ -306,6 +317,9 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 - **Hidden previous pages:** Next.js keeps the previous page mounted but hidden after a client navigation, so going back restores it. Effects still clean up when a page is hidden. In browser tests, scope queries to the visible screen (e.g. `getByRole("log")`), because a hidden page's text is still in the DOM.
 - **Time in client components:** never call `new Date()` / `Date.now()` during render, since it causes hydration mismatches and Cache Components errors. Use `useNow(serverNow)` from `src/hooks/use-now.ts`, or `useClientNow()` for UI in the static shell.
 - **URL hooks in the static shell:** `usePathname()`, `useParams()` and `useSearchParams()` in a client component outside any `<Suspense>` block prerendering, and Next.js logs an error in the browser console. Wrap that component in `<Suspense>` with a URL-free fallback, as `SimulatorShell` does for `RouteAwareStatusBar`.
+- **Prerendered pages can't format timezones:** `@date-fns/tz` reads the clock internally, so `next build` fails ("unstable value `new Date()`") if a prerendered component formats a time. Static content passes ready-made labels (`MessageBubble`'s `timeLabel`, as in `ChatPreview`); live content reads after `connection()`.
+- **Constants for server components** go in plain modules (e.g. `src/lib/demo/constants.ts`), not `"use client"` files. A value imported from a client module arrives in a server component as a client reference, not the value.
+- **Stale dev server:** if the dev server says an exported function "is not a function" although it exists, its module graph is stale, typically after `next build` ran alongside it. Restart `npm run dev`. Restart it after Prisma schema changes too, so it loads the new client.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.
@@ -319,7 +333,9 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 ## Demo rules
 
 - Seed bookings are placed relative to today, so the calendar looks busy but still has open slots. A seed booking that lands on a closed day or outside that day's hours is skipped, and the seed log says so.
-- "Reset demo" reseeds the database. `npm run db:seed` wipes every table first, so it's safe to rerun. But the user keeps their own test chats and bookings in the dev DB, so don't reseed without asking.
+- **Reset demo** (the button) and `npm run db:seed` both call `seedDemo()`, which wipes every table and recreates the demo data. Both are safe to rerun. But the user keeps their own test chats and bookings in the dev DB, so Claude never runs either, or clicks Reset in a browser test, without asking. Reset tests run against `prisma/test.db` (`demo.db.test.ts`). The button reloads the page afterwards, so the simulator drops its in-memory chats.
+- **Scenarios** (`src/lib/demo/scenarios.ts`) are suggested messages per business category, sent into the demo iframe by `postMessage({ type: "bookmate:say", slug, text })`. `SimulatorProvider` accepts these from its own origin only. When changing the scripted agent or a scenario, run `demo.db.test.ts`: it plays every scenario against the seed data and fails on any "didn't quite get that". `SHOW_TRANSCRIPTS=1` prints the conversations to read.
+- **The demo phone is an iframe** of `/simulator/[slug]`, 375px wide, so the simulator uses its full-screen phone layout. `allow="microphone; autoplay"` lets voice calls work inside it.
 - **The simulator phone is shared.** The user tries the simulator while Claude runs browser tests, and both act as the one simulator customer, with one name on file. In automated browser tests, use a business the user has no chat with, record the DB state first, and afterwards delete only the rows the test created. Never wipe tables or reset the customer's name.
 - All customer names and phone numbers are fictional.
 - Voice needs Chrome or Edge, since `SpeechRecognition` isn't available elsewhere. Feature-detect it and show a notice in other browsers. Speech recognition and speech output both use English (`en-US`).

@@ -4,6 +4,7 @@ import { Bot, CalendarDays, ExternalLink, House, LayoutDashboard, MessagesSquare
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { ResetDemoButton } from "@/components/demo/reset-demo-button";
 import { cn } from "@/lib/utils";
 
 type Business = { slug: string; name: string; emoji: string };
@@ -81,6 +82,9 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
           <House className="size-4" aria-hidden />
           All businesses
         </Link>
+        <div className="mt-2 px-1">
+          <ResetDemoButton variant="ghost" />
+        </div>
       </div>
     </nav>
   );
