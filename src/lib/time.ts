@@ -69,6 +69,24 @@ export function clockToMinutes(clockTime: string): number {
   return hh * 60 + mm;
 }
 
+/** Minutes after midnight → "HH:mm". */
+export function minutesToClock(minutes: number): string {
+  if (!Number.isInteger(minutes) || minutes < 0 || minutes >= 24 * 60) {
+    throw new Error(`Invalid minutes ${minutes}, expected 0–1439`);
+  }
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+/** True for a real calendar date in "YYYY-MM-DD" form (rejects 2026-02-30). */
+export function isValidIsoDate(isoDate: string): boolean {
+  try {
+    parseIsoDate(isoDate);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** "13:30" → "1:30 PM". */
 export function formatClockTime(clockTime: string): string {
   const [hh, mm] = parseClockTime(clockTime);
@@ -80,7 +98,12 @@ export function formatClockTime(clockTime: string): string {
 function parseIsoDate(isoDate: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
   if (!match) throw new Error(`Invalid date "${isoDate}", expected YYYY-MM-DD`);
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
+  const [y, m, d] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const roundTrip = new Date(Date.UTC(y, m - 1, d));
+  if (roundTrip.getUTCFullYear() !== y || roundTrip.getUTCMonth() !== m - 1 || roundTrip.getUTCDate() !== d) {
+    throw new Error(`Invalid date "${isoDate}": no such calendar day`);
+  }
+  return [y, m, d];
 }
 
 function parseClockTime(clockTime: string): [number, number] {

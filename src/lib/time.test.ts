@@ -9,6 +9,8 @@ import {
   formatClockTime,
   formatInZone,
   formatMessageTime,
+  isValidIsoDate,
+  minutesToClock,
   todayInZone,
   weekdayOf,
   zonedDateTime,
@@ -69,6 +71,21 @@ describe("clock helpers", () => {
     expect(formatClockTime("00:15")).toBe("12:15 AM");
     expect(formatClockTime("12:00")).toBe("12:00 PM");
     expect(formatClockTime("21:30")).toBe("9:30 PM");
+  });
+});
+
+describe("minutesToClock / isValidIsoDate", () => {
+  it("formats minutes as HH:mm", () => {
+    expect(minutesToClock(0)).toBe("00:00");
+    expect(minutesToClock(14 * 60 + 5)).toBe("14:05");
+    expect(() => minutesToClock(1440)).toThrow();
+  });
+
+  it("accepts real dates only", () => {
+    expect(isValidIsoDate("2028-02-29")).toBe(true);
+    expect(isValidIsoDate("2026-02-29")).toBe(false);
+    expect(isValidIsoDate("2026-13-01")).toBe(false);
+    expect(isValidIsoDate("2026-1-1")).toBe(false);
   });
 });
 

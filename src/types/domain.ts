@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isValidIsoDate } from "@/lib/time";
+
 // String-literal unions for the String columns in prisma/schema.prisma.
 // Validate with these schemas wherever a DB value or external input enters typed code.
 
@@ -26,4 +28,7 @@ export type BookingSource = z.infer<typeof bookingSourceSchema>;
 export const clockTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Expected HH:mm");
 
 /** "YYYY-MM-DD" calendar date in a business's timezone. */
-export const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD");
+export const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+  .refine(isValidIsoDate, "Not a real calendar date");

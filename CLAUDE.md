@@ -12,7 +12,8 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 
 - **Phase 1 (scaffold and data): done.** Next.js app, Prisma schema and first migration, seed data for the four businesses, timezone helpers with tests, and a temporary home page listing the businesses from the database.
 - **Phase 2 (WhatsApp simulator UI): done.** `/simulator` (chat list) and `/simulator/[slug]` (chat) in a phone frame, with ticks, a typing indicator, unread badges, search, WhatsApp text formatting, and light and dark mode. Replies come from `src/lib/simulator/placeholder-replies.ts`, and chat state lives only in the browser.
-- Next: Phase 3, the booking engine.
+- **Phase 3 (booking engine): done.** Pure slot logic in `src/lib/booking/availability.ts`, and DB operations (availability, create, reschedule, cancel, customer lookups) in `src/lib/booking/bookings.ts`. Covered by unit tests and DB tests, including simultaneous bookings. No UI yet.
+- Next: Phase 4, the AI agent.
 
 ## Product vision
 
@@ -63,7 +64,8 @@ npm run dev                          # dev server (http://localhost:3000)
 npm run build                        # production build; also catches Cache Components errors
 npm run lint
 npm run typecheck                    # next typegen && tsc --noEmit
-npm test                             # vitest run (npm run test:watch to watch)
+npm test                             # all tests: "unit" project + "db" project (npm run test:watch to watch)
+npx vitest run --project unit        # just the fast pure-logic tests
 npm run db:migrate -- --name <name>  # create and apply a migration after editing schema.prisma
 npm run db:seed                      # wipe the data and reload the four demo businesses
 npm run db:reset                     # rebuild the DB from migrations, then seed (the "reset demo" path)
@@ -127,9 +129,10 @@ src/
       system-prompt.ts        # builds the persona prompt from a Business record
       tools.ts                # createBookingTools(businessId)
       run-agent.ts            # tool loop, streaming, persistence
-    booking/                  # †
-      availability.ts         # pure slot calculation (+ availability.test.ts)
-      bookings.ts             # create / reschedule / cancel against the DB
+    booking/
+      availability.ts         # pure slot rules (+ availability.test.ts)
+      bookings.ts             # DB operations, server-only (+ bookings.db.test.ts)
+      errors.ts               # BookingError: code, customer-facing message, alternatives
     voice/                    # †
       recognition.ts          # SpeechRecognition wrapper
       synthesis.ts            # speechSynthesis wrapper with a sentence queue
@@ -141,7 +144,8 @@ src/
     simulator.ts              # SimulatorBusiness, ChatMessage, MessageStatus
 .env                          # DATABASE_URL (not committed)
 .env.example
-vitest.config.mts
+vitest.config.mts             # "unit" and "db" test projects
+src/test/                     # test support: server-only stub, test-DB global setup
 ```
 
 ## Architecture
@@ -187,6 +191,19 @@ vitest.config.mts
 - **SDK usage:** use SDK types (`Anthropic.MessageParam`, `Anthropic.Message`, …) instead of redefining them. Handle errors with the typed SDK classes (`Anthropic.RateLimitError`, …), never by matching message strings.
 - **No invented facts:** the agent never makes up prices, slots or policies. Everything comes from tools or the system prompt. Before booking, it confirms service, date, time and the customer's name.
 
+### Booking engine
+
+Everything that reads or changes bookings goes through `src/lib/booking/bookings.ts`: the agent's tools, and later the dashboard. Nothing else writes to the `Booking` table, apart from the seed script.
+
+- **Slot rules** (`availability.ts`, pure): start times sit on the business's `slotIntervalMin` grid from opening time, and the whole service must fit before closing. A slot must start at least 30 minutes from now and at most 60 days ahead (`BOOKING_RULES`). Capacity counts the most bookings of that service running *at the same instant*, so back-to-back bookings don't block each other.
+- **Rejection order:** date problems (`IN_PAST`, `TOO_FAR`) come first, then `CLOSED`, `OUTSIDE_HOURS`, `NOT_ON_GRID`, `IN_PAST`/`TOO_SOON` for the time, and finally `FULL`.
+- **Writes** run inside `db.$transaction`, re-checking the slot before writing. Tests prove three simultaneous requests for the last table produce exactly one booking.
+- **Scoping:** every function takes `businessId`. A service or booking from another business comes back as `SERVICE_NOT_FOUND` / `BOOKING_NOT_FOUND`. Passing `customerId` to reschedule or cancel restricts them to that customer's own bookings. The agent always passes it; staff actions won't.
+- **Changes:** only `confirmed` bookings that haven't started can be rescheduled or cancelled. Rescheduling ignores the booking's own current slot.
+- **Party size:** table services require a party size that fits, and `PARTY_TOO_LARGE` names the right table. Other services store `null`.
+- **Errors** are `BookingError` with a `code`, a `message` the agent can relay as-is, and `alternatives` (up to 3 nearest open "HH:mm" times). Anything else thrown is a bug, not a booking outcome.
+- **Dates and times in and out** are local `"YYYY-MM-DD"` / `"HH:mm"` in the business timezone. `BookingSummary` is the shape to hand to the agent and the UI.
+
 ### Agent tools (planned)
 
 `get_business_info`, `list_services`, `check_availability` (service, date or date range, party size), `create_booking`, `find_customer_bookings`, `reschedule_booking`, `cancel_booking`, `request_human_handoff`.
@@ -208,7 +225,7 @@ vitest.config.mts
 - **shadcn:** `src/components/ui/` is generated. Add components with the shadcn CLI and only edit them for theming.
 - **WhatsApp look:** built from Tailwind theme tokens (`wa-*` in `globals.css`, e.g. `bg-wa-bubble-out`, `text-wa-meta`) with light and dark variants, never hard-coded hex in components. Use our own lucide icons. Don't ship WhatsApp or Meta logos. The simulator's dark mode toggles a `dark` class on the phone wrapper only, not on the whole page.
 - **Message formatting:** agent replies use WhatsApp syntax (`*bold*`, `_italic_`, `~strike~`), never Markdown. Render text through `FormattedText`, and strip it for previews with `stripWhatsAppFormatting`.
-- **Tests:** pure logic (slot generation, availability, timezone helpers) gets Vitest tests. UI is verified by running the app.
+- **Tests:** pure logic (slot rules, timezone helpers, formatting) gets Vitest unit tests (`*.test.ts`). Code that needs the database gets `*.db.test.ts` files in the "db" project. Those run one file at a time against `prisma/test.db`, which is rebuilt from `prisma/migrations` on every run and never touches the dev database. DB tests pass a fixed `now` to every booking function. UI is verified by running the app.
 - **Env files:** `.env` holds `DATABASE_URL`, which both the Prisma CLI and Next.js read. `.env.local` holds secrets (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) and is read only by Next.js. Neither is committed. Keep `.env.example` current.
 
 ## Demo rules
