@@ -13,7 +13,7 @@ import {
 import { loadAgentBusiness } from "@/lib/agent/business";
 import {
   appendMessages,
-  getOrCreateConversation,
+  conversationForTurn,
   loadMessages,
   withConversationLock,
   type NewMessage,
@@ -35,6 +35,8 @@ export type RunAgentTurnInput = {
   businessId: string;
   customerId: string;
   channel: Channel;
+  /** Required for voice turns: the call's conversation. Chat turns use the current chat. */
+  conversationId?: string;
   /** The customer's new messages, oldest first. */
   texts: string[];
   onEvent: (event: AgentEvent) => void;
@@ -55,7 +57,7 @@ export type RunAgentTurnInput = {
 export async function runAgentTurn(input: RunAgentTurnInput): Promise<void> {
   const client = input.client ?? anthropic();
   const now = input.now ?? (() => new Date());
-  const conversation = await getOrCreateConversation(input.businessId, input.customerId, input.channel);
+  const conversation = await conversationForTurn(input);
 
   await withConversationLock(conversation.id, async () => {
     await appendMessages(
@@ -82,7 +84,7 @@ export async function runAgentTurn(input: RunAgentTurnInput): Promise<void> {
       ...toApiMessages(await loadMessages(conversation.id)),
       { role: "system", content: note },
     ];
-    const system = buildSystemPrompt(business);
+    const system = buildSystemPrompt(business, input.channel);
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const response = await client.beta.messages

@@ -52,6 +52,17 @@ describe("buildSystemPrompt", () => {
   it("is deterministic, so it can be prompt-cached", () => {
     expect(buildSystemPrompt(restaurant)).toBe(prompt);
   });
+
+  it("has a phone-call variant with spoken-style rules", () => {
+    const voice = buildSystemPrompt(restaurant, "voice");
+    expect(voice).toContain("Customers call you on WhatsApp");
+    expect(voice).toContain("# How you speak");
+    expect(voice).toContain("Offer at most three times at once.");
+    expect(voice).not.toContain("*bold*");
+    expect(prompt).toContain("*bold*");
+    // Everything else (business facts, booking rules) is shared.
+    expect(voice.slice(voice.indexOf("# Bookings"))).toBe(prompt.slice(prompt.indexOf("# Bookings")));
+  });
 });
 
 describe("buildTurnNote", () => {

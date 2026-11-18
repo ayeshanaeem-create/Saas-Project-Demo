@@ -24,7 +24,8 @@ The build runs in phases, and each phase is agreed in conversation before it sta
   - **Agent:** the persona editor, plus which agent is active.
 
   The overview, bookings and conversations pages refresh every 5 seconds, so simulator activity shows up by itself.
-- Next: Phase 6, voice calls.
+- **Phase 6 (voice calls): done.** The phone icon in a chat opens `/simulator/[slug]/call`: ringing, the spoken greeting, then listen → agent → speak until hang-up. There are live captions, Mute and Interrupt, a call bubble in the chat afterwards, and each call is its own voice conversation on the dashboard. Tested in headless Edge with fake speech APIs; real speech needs Chrome or Edge with a microphone and an internet connection.
+- Next: Phase 7, demo polish.
 
 ## Product vision
 
@@ -108,6 +109,7 @@ src/
       layout.tsx              # phone shell + SimulatorProvider (chat state survives navigation)
       page.tsx                # chat list
       [slug]/page.tsx         # one chat (own <Suspense> around params)
+      [slug]/call/page.tsx    # voice call screen
       not-found.tsx
     dashboard/
       page.tsx                # redirects to the first business
@@ -117,7 +119,8 @@ src/
         page.tsx              # overview: stats, today's schedule, handoffs, recent chats
         bookings/ conversations/ conversations/[id]/ services/ agent/
         actions.ts            # Server Actions: staff booking/cancel, services, hours, persona, resolve handoff
-    api/agent/chat/route.ts   # POST: one customer turn, streams AgentEvents as NDJSON
+    api/agent/chat/route.ts   # POST: one customer turn (chat or voice), streams AgentEvents as NDJSON
+    api/agent/call/route.ts   # POST: start a call (new voice conversation) / end it (endedAt)
     layout.tsx
     globals.css               # shadcn tokens + wa-* simulator tokens + wa-chat-wallpaper utility
   components/
@@ -126,7 +129,7 @@ src/
     whatsapp/                 # simulator-provider (state), simulator-shell (phone frame + theme
                               #   toggle), status-bar, chat-list, chat-screen, chat-header,
                               #   message-list, message-bubble, message-status (ticks), composer,
-                              #   formatted-text, business-avatar, chat-skeleton; † call-screen
+                              #   formatted-text, business-avatar, chat-skeleton, call-screen
     dashboard/                # nav, booking list/row, new-booking dialog, cancel button, service/hours/
                               #   persona editors, conversation list, transcript view, badges, auto-refresh
     marketing/                # †
@@ -163,13 +166,14 @@ src/
       availability.ts         # pure slot rules (+ availability.test.ts)
       bookings.ts             # DB operations, server-only (+ bookings.db.test.ts)
       errors.ts               # BookingError: code, customer-facing message, alternatives
-    voice/                    # †
-      recognition.ts          # SpeechRecognition wrapper
-      synthesis.ts            # speechSynthesis wrapper with a sentence queue
+    voice/
+      recognition.ts          # listenOnce(): one utterance via SpeechRecognition
+      synthesis.ts            # speak(): sentence by sentence, abortable
+      to-speech.ts            # reply text → speakable text, sentence splitting (+ test)
   hooks/
     use-now.ts                # hydration-safe clock (useNow / useClientNow)
     use-form-action.ts        # Server Action forms that keep input on validation errors
-                              # † use-voice-call.ts
+    use-voice-call.ts         # the call loop: ring, greet, listen → agent → speak, mute, interrupt
   types/
     domain.ts                 # zod enums for the String status/category columns
     simulator.ts              # SimulatorBusiness, SimulatorChat, ChatMessage, MessageStatus
@@ -207,7 +211,18 @@ The `/simulator` layout loads each business's saved chat (`src/lib/simulator/cha
 
 ### Voice call flow
 
-`SpeechRecognition` produces a final transcript. It goes to the same agent endpoint with `channel: "voice"`. The streamed reply is spoken sentence by sentence via `speechSynthesis`, then listening resumes. If the caller starts talking, speech output stops (barge-in). Voice replies are kept short, and the system prompt has a voice-channel variant. A call is saved as a conversation with channel `voice`, and the dashboard shows its transcript.
+`useVoiceCall` (`src/hooks/use-voice-call.ts`) runs each call:
+
+1. `POST /api/agent/call {action: "start"}` creates a new voice conversation and returns its id.
+2. It rings briefly, then speaks the persona greeting (UI-only, like the chat greeting).
+3. It loops: `listenOnce()` hears one utterance, which goes to `/api/agent/chat` with `channel: "voice"` and the call's `conversationId`. Each reply is spoken via `toSpeech()` + `speak()`, then it listens again.
+4. Hanging up sends `{action: "end"}`, which sets `endedAt`, and the chat gets a "Voice call · m:ss" bubble. Saved calls also load as call bubbles (`getSimulatorChats`).
+
+- **No voice barge-in.** The microphone is off while the agent speaks, because speech recognition would hear the speakers and cut the agent off. The **Interrupt** button stops speech, including replies still queued. **Mute** pauses listening.
+- **Spoken style.** Claude gets the voice variant of the system prompt (`buildSystemPrompt(business, "voice")`: one or two sentences, no formatting, at most three times offered). The scripted agent in voice mode offers 4 times instead of 8 and asks "Shall I go ahead?". `toSpeech()` still strips formatting and emoji and reads prices as rupees, whichever agent replied.
+- **Browsers.** Speech recognition needs Chrome or Edge, a microphone permission and internet (the browser sends audio to its speech service). Without support, the call screen says so. Failed calls never reach the agent.
+- **Dev-mode double mount.** The call starts on a zero-delay timer that the first cleanup cancels; otherwise every call would also create an instantly-ended ghost call. Each effect run resets the call's refs, because refs survive the remount.
+- **Testing.** Headless browsers have no microphone. Browser tests replace `SpeechRecognition` and `speechSynthesis` with fakes through an init script (a `__say(text)` hook drives the fake recogniser), and use a business the user isn't chatting with.
 
 ### Data model
 
@@ -218,7 +233,7 @@ The `/simulator` layout loads each business's saved chat (`src/lib/simulator/cha
 - **Working hours** allow one interval per weekday, stored as local `"HH:mm"`. A missing weekday means closed.
 - **Messages** store the Anthropic content blocks verbatim as JSON in `content`, plus the `text` the chat UI shows (empty for tool results and system notes). `position` (unique per conversation) is the replay order. Never sort messages by `createdAt`.
 - **Booking source** is `agent` or `staff`. Seed data and dashboard bookings are `staff`.
-- **Voice calls** are their own `Conversation` with channel `voice`.
+- **Voice calls:** each call is its own `Conversation` with channel `voice`, created by `startCall()`. `endedAt` records the hang-up, and its length is `endedAt - createdAt`. Voice turns must name their conversation (`conversationForTurn`); chat turns use the customer's current chat.
 
 ## Claude agent conventions
 
@@ -290,6 +305,7 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 - **Route params:** `params` and `searchParams` are Promises and must be awaited. Type pages and layouts with the global `PageProps<"/route">` / `LayoutProps<"/route">` helpers.
 - **Hidden previous pages:** Next.js keeps the previous page mounted but hidden after a client navigation, so going back restores it. Effects still clean up when a page is hidden. In browser tests, scope queries to the visible screen (e.g. `getByRole("log")`), because a hidden page's text is still in the DOM.
 - **Time in client components:** never call `new Date()` / `Date.now()` during render, since it causes hydration mismatches and Cache Components errors. Use `useNow(serverNow)` from `src/hooks/use-now.ts`, or `useClientNow()` for UI in the static shell.
+- **URL hooks in the static shell:** `usePathname()`, `useParams()` and `useSearchParams()` in a client component outside any `<Suspense>` block prerendering, and Next.js logs an error in the browser console. Wrap that component in `<Suspense>` with a URL-free fallback, as `SimulatorShell` does for `RouteAwareStatusBar`.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.

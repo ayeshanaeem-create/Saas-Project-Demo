@@ -119,6 +119,8 @@ type SimulatorContextValue = {
   startedAt: number;
   state: State;
   send: (slug: string, text: string) => void;
+  /** Adds a finished voice call to the chat as a call bubble. */
+  addCall: (slug: string, call: { startedAt: string; durationSec: number }) => void;
   open: (slug: string) => void;
   close: (slug: string) => void;
 };
@@ -214,12 +216,20 @@ export function SimulatorProvider({
     [flush],
   );
 
+  const addCall = useCallback((slug: string, call: { startedAt: string; durationSec: number }) => {
+    dispatch({
+      type: "append",
+      slug,
+      message: { id: crypto.randomUUID(), direction: "outgoing", kind: "call", text: "Voice call", sentAt: call.startedAt, durationSec: call.durationSec },
+    });
+  }, []);
+
   const open = useCallback((slug: string) => dispatch({ type: "opened", slug }), []);
   const close = useCallback((slug: string) => dispatch({ type: "closed", slug }), []);
 
   const value = useMemo(
-    () => ({ businesses, startedAt: Date.parse(startedAt), state, send, open, close }),
-    [businesses, startedAt, state, send, open, close],
+    () => ({ businesses, startedAt: Date.parse(startedAt), state, send, addCall, open, close }),
+    [businesses, startedAt, state, send, addCall, open, close],
   );
 
   return <SimulatorContext value={value}>{children}</SimulatorContext>;
@@ -233,8 +243,8 @@ export function useSimulator(): SimulatorContextValue {
 
 /** One business's chat, or null if the slug is unknown. */
 export function useConversation(slug: string) {
-  const { businesses, state, startedAt, send, open, close } = useSimulator();
+  const { businesses, state, startedAt, send, addCall, open, close } = useSimulator();
   const business = businesses.find((b) => b.slug === slug) ?? null;
   const conversation = state.conversations[slug] ?? null;
-  return { business, conversation, startedAt, send, open, close };
+  return { business, conversation, startedAt, send, addCall, open, close };
 }

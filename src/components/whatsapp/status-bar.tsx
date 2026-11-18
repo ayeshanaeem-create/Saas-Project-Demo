@@ -1,20 +1,31 @@
 "use client";
 
 import { BatteryFull, Signal, Wifi } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { useClientNow } from "@/hooks/use-now";
 import { SIMULATOR_TIMEZONE } from "@/lib/simulator/constants";
 import { formatInZone } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
+/**
+ * The status bar, dark on the (always dark) call screen. Reading the URL makes this a
+ * runtime component, so render it inside <Suspense> with a plain <StatusBar> as fallback.
+ */
+export function RouteAwareStatusBar({ className }: { className?: string }) {
+  const onCall = usePathname().endsWith("/call");
+  return <StatusBar className={className} onCall={onCall} />;
+}
+
 /** Fake phone status bar for the desktop phone frame. */
-export function StatusBar({ className }: { className?: string }) {
+export function StatusBar({ className, onCall = false }: { className?: string; onCall?: boolean }) {
   const now = useClientNow();
 
   return (
     <div
       className={cn(
-        "relative h-10 shrink-0 items-center justify-between bg-wa-header px-7 text-[14px] font-semibold text-wa-text",
+        "relative h-10 shrink-0 items-center justify-between px-7 text-[14px] font-semibold text-wa-text",
+        onCall ? "dark bg-wa-chat" : "bg-wa-header",
         className,
       )}
     >

@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { endCall, startCall } from "@/lib/agent/conversations";
 import { runScriptedTurn } from "@/lib/agent/scripted/run-scripted";
 import { createBooking } from "@/lib/booking/bookings";
 import { db } from "@/lib/db";
+import { getSimulatorChats } from "@/lib/simulator/chats";
 import { SIMULATOR_CUSTOMER_PHONE } from "@/lib/simulator/constants";
 import { zonedDateTime } from "@/lib/time";
 import type { AgentEvent } from "@/types/agent-events";
@@ -264,5 +266,70 @@ describe("conversation", () => {
       ["user", [{ type: "text", text: "asdfgh" }]],
       ["assistant", [{ type: "text", text: expect.stringMatching(/^Sorry/) }]],
     ]);
+  });
+});
+
+describe("voice calls", () => {
+  async function speak(text: string, conversationId: string): Promise<string[]> {
+    const events: AgentEvent[] = [];
+    await runScriptedTurn({
+      businessId: salonId,
+      customerId,
+      channel: "voice",
+      conversationId,
+      texts: [text],
+      onEvent: (e) => events.push(e),
+      now: () => NOW,
+      delay: async () => {},
+    });
+    return events.flatMap((e) => (e.type === "message" ? [e.message.text] : []));
+  }
+
+  it("keeps each call in its own conversation and speaks fewer options", async () => {
+    await send("hello"); // an existing chat
+    const call = await startCall(salonId, customerId);
+
+    expect(await speak("haircut tomorrow", call.id)).toEqual([
+      "I have openings from 11:00 AM to 8:00 PM, for example 11:00 AM, 2:00 PM, 5:00 PM or 8:00 PM tomorrow. What time suits you?",
+    ]);
+
+    const conversations = await db.conversation.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { messages: true } } } });
+    expect(conversations.map((c) => [c.channel, c._count.messages])).toEqual([
+      ["chat", 2],
+      ["voice", 2],
+    ]);
+  });
+
+  it("asks for a spoken yes instead of a typed one", async () => {
+    await createBooking({
+      businessId: salonId,
+      serviceId: await serviceId("Haircut"),
+      customerId,
+      date: THU,
+      time: "17:00",
+      source: "staff",
+      now: NOW,
+    });
+    const call = await startCall(salonId, customerId);
+    expect(await speak("I want to cancel my booking", call.id)).toEqual(["Cancel your *Haircut* tomorrow at 5:00 PM? Shall I go ahead?"]);
+  });
+
+  it("refuses a voice turn without its call", async () => {
+    await expect(
+      runScriptedTurn({ businessId: salonId, customerId, channel: "voice", texts: ["hi"], onEvent: () => {}, delay: async () => {} }),
+    ).rejects.toThrow(/conversationId/);
+  });
+
+  it("records how long the call lasted and shows it in the chat", async () => {
+    const call = await startCall(salonId, customerId);
+    await db.conversation.update({ where: { id: call.id }, data: { createdAt: new Date(Date.now() - 83_000) } });
+    expect(await endCall({ businessId: salonId, customerId, conversationId: call.id })).toBe(true);
+    expect(await endCall({ businessId: salonId, customerId, conversationId: call.id })).toBe(false); // already ended
+
+    const chats = await getSimulatorChats();
+    const bubble = chats["salon"]?.messages.find((m) => m.kind === "call");
+    expect(bubble).toMatchObject({ direction: "outgoing", text: "Voice call" });
+    expect(bubble?.durationSec).toBeGreaterThanOrEqual(83);
+    expect(bubble?.durationSec).toBeLessThan(90);
   });
 });

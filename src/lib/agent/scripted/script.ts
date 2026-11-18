@@ -18,6 +18,7 @@ import { BookingError } from "@/lib/booking/errors";
 import { db } from "@/lib/db";
 import { formatDuration, formatPhone, formatPrice } from "@/lib/format";
 import { addDays, clockToMinutes, formatClockTime, formatInZone, todayInZone, weekdayOf, zonedDateTime } from "@/lib/time";
+import type { Channel } from "@/types/domain";
 
 import {
   detectIntents,
@@ -77,6 +78,8 @@ export type ScriptTurn = {
   /** The customer's new messages, joined. */
   text: string;
   now: Date;
+  /** On a call, replies are spoken: fewer options, no "reply yes". */
+  channel: Channel;
 };
 
 export type ScriptOutcome = {
@@ -107,6 +110,7 @@ class ScriptRun {
   private state: ScriptState;
   private handoff = false;
   private readonly business: LoadedBusiness;
+  private readonly voice: boolean;
   private readonly tz: string;
   private readonly today: string;
   private customerName: string | null;
@@ -117,6 +121,7 @@ class ScriptRun {
     this.tz = turn.business.timezone;
     this.today = todayInZone(this.tz, turn.now);
     this.customerName = turn.customer.name;
+    this.voice = turn.channel === "voice";
   }
 
   async run(): Promise<ScriptOutcome> {
@@ -369,7 +374,7 @@ class ScriptRun {
     s.awaiting = "confirm";
     const at = `at *${formatClockTime(draft.time)}*`;
     if (rescheduling) {
-      this.say(`Just to confirm: move your *${service.name}* to ${this.boldDay(draft.date)} ${at}? Reply *yes* to confirm.`);
+      this.say(`Just to confirm: move your *${service.name}* to ${this.boldDay(draft.date)} ${at}? ${this.confirmPrompt()}`);
     } else {
       const price = service.price > 0 ? ` (${formatPrice(service.price, this.business.currency)}, ${formatDuration(service.durationMin)})` : "";
       this.say(
@@ -489,7 +494,7 @@ class ScriptRun {
     const label = `*${booking.serviceName}* ${this.onDay(booking.date)} at ${formatClockTime(booking.time)}`;
     if (s.flow === "cancel") {
       s.awaiting = "confirm_cancel";
-      this.say(`Cancel your ${label}? Reply *yes* to confirm.`);
+      this.say(`Cancel your ${label}? ${this.confirmPrompt()}`);
       return;
     }
     s.awaiting = null;
@@ -570,6 +575,11 @@ class ScriptRun {
     return { replies: this.replies, state: this.state, handoff: this.handoff };
   }
 
+  /** How to ask for a yes: typed in chat, spoken on a call. */
+  private confirmPrompt(): string {
+    return this.voice ? "Shall I go ahead?" : "Reply *yes* to confirm.";
+  }
+
   private service(name: string | undefined) {
     return name ? this.business.services.find((s) => s.name === name) : undefined;
   }
@@ -594,7 +604,7 @@ class ScriptRun {
     const inPart = dayPart ? times.filter((t) => partOf(t) === dayPart) : times;
     const pool = inPart.length > 0 ? inPart : times;
     const lead = dayPart && inPart.length === 0 ? `Nothing is free in the ${dayPart} ${this.onDay(date)}, but ` : "";
-    const shown = sample(pool, 8).map(formatClockTime);
+    const shown = sample(pool, this.voice ? 4 : 8).map(formatClockTime);
     const range =
       pool.length > shown.length
         ? `I have openings from ${formatClockTime(pool[0]!)} to ${formatClockTime(pool.at(-1)!)}, for example ${this.joinOr(shown)}`

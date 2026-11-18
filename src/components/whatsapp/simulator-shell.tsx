@@ -2,10 +2,10 @@
 
 import { ArrowLeft, Moon, Sun } from "lucide-react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { StatusBar } from "@/components/whatsapp/status-bar";
+import { RouteAwareStatusBar, StatusBar } from "@/components/whatsapp/status-bar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,7 +41,9 @@ export function SimulatorShell({ children }: { children: ReactNode }) {
             "sm:h-[min(52rem,calc(100dvh-6.5rem))] sm:w-[24.5rem] sm:rounded-[3rem] sm:border-[11px] sm:border-neutral-950 sm:shadow-2xl",
           )}
         >
-          <StatusBar className="hidden sm:flex" />
+          <Suspense fallback={<StatusBar className="hidden sm:flex" />}>
+            <RouteAwareStatusBar className="hidden sm:flex" />
+          </Suspense>
           <div className="relative flex min-h-0 flex-1 flex-col">{children}</div>
         </div>
       </div>

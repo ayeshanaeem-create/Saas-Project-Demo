@@ -63,6 +63,15 @@ export function formatChatListTime(instant: Date, timeZone: string, now: Date): 
   return formatInZone(instant, timeZone, "dd/MM/yyyy");
 }
 
+/** Call length as a timer: 7 → "0:07", 83 → "1:23", 3725 → "1:02:05". */
+export function formatCallDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = String(s % 60).padStart(2, "0");
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}` : `${minutes}:${seconds}`;
+}
+
 /** "HH:mm" → minutes after midnight. */
 export function clockToMinutes(clockTime: string): number {
   const [hh, mm] = parseClockTime(clockTime);

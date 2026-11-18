@@ -18,6 +18,13 @@ export type AgentEvent =
 /** Body of POST /api/agent/chat. */
 export type AgentChatRequest = {
   slug: string;
-  /** The customer's messages since the last request, oldest first. */
+  /** The customer's messages since the last request (on a call, what they said), oldest first. */
   texts: string[];
+  /** Defaults to "chat". */
+  channel?: "chat" | "voice";
+  /** Required for voice: the call's conversation, from POST /api/agent/call. */
+  conversationId?: string;
 };
+
+/** Body of POST /api/agent/call. */
+export type AgentCallRequest = { action: "start"; slug: string } | { action: "end"; slug: string; conversationId: string };

@@ -28,6 +28,47 @@ export async function getOrCreateConversation(businessId: string, customerId: st
   });
 }
 
+/**
+ * The conversation a turn belongs to: the given one (it must be this customer's, with this
+ * business, on this channel), or for chat the customer's current one.
+ */
+export async function conversationForTurn(input: {
+  businessId: string;
+  customerId: string;
+  channel: Channel;
+  conversationId?: string;
+}) {
+  if (!input.conversationId) {
+    if (input.channel === "voice") throw new Error("A voice turn needs the call's conversationId");
+    return getOrCreateConversation(input.businessId, input.customerId, input.channel);
+  }
+  const conversation = await db.conversation.findFirst({
+    where: { id: input.conversationId, businessId: input.businessId, customerId: input.customerId, channel: input.channel },
+  });
+  if (!conversation) throw new Error(`Conversation ${input.conversationId} not found for this customer and business`);
+  return conversation;
+}
+
+/** Every call is its own voice conversation. */
+export function startCall(businessId: string, customerId: string) {
+  return db.conversation.create({ data: { businessId, customerId, channel: "voice" }, select: { id: true } });
+}
+
+/** Records when the caller hung up. Returns false if the call isn't this customer's. */
+export async function endCall(input: { businessId: string; customerId: string; conversationId: string }) {
+  const { count } = await db.conversation.updateMany({
+    where: {
+      id: input.conversationId,
+      businessId: input.businessId,
+      customerId: input.customerId,
+      channel: "voice",
+      endedAt: null,
+    },
+    data: { endedAt: new Date() },
+  });
+  return count > 0;
+}
+
 export async function loadMessages(conversationId: string): Promise<StoredMessage[]> {
   const rows = await db.message.findMany({ where: { conversationId }, orderBy: { position: "asc" } });
   return rows.map(toStored);

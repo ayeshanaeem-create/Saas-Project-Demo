@@ -7,11 +7,19 @@ import { runAgentTurn } from "@/lib/agent/run-agent";
 import { runScriptedTurn } from "@/lib/agent/scripted/run-scripted";
 import { db } from "@/lib/db";
 import type { AgentEvent } from "@/types/agent-events";
+import { channelSchema } from "@/types/domain";
 
-const requestSchema = z.object({
-  slug: z.string().min(1).max(100),
-  texts: z.array(z.string().trim().min(1).max(2000)).min(1).max(20),
-});
+const requestSchema = z
+  .object({
+    slug: z.string().min(1).max(100),
+    texts: z.array(z.string().trim().min(1).max(2000)).min(1).max(20),
+    channel: channelSchema.default("chat"),
+    /** Voice turns name their call (from POST /api/agent/call). */
+    conversationId: z.string().min(1).max(100).optional(),
+  })
+  .refine((body) => body.channel === "chat" || body.conversationId, {
+    message: "Voice turns need the call's conversationId",
+  });
 
 /**
  * One customer turn in the simulator, answered by Claude or by the scripted agent (see
@@ -56,7 +64,8 @@ export async function POST(request: Request) {
         await runTurn({
           businessId: business.id,
           customerId: customer.id,
-          channel: "chat",
+          channel: parsed.data.channel,
+          conversationId: parsed.data.conversationId,
           texts: parsed.data.texts,
           onEvent: send,
         });

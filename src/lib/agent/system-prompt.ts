@@ -3,6 +3,7 @@
 // what we know about the customer) goes in a short system note appended to each turn.
 
 import { BOOKING_RULES } from "@/lib/booking/availability";
+import type { Channel } from "@/types/domain";
 import { formatDuration, formatPhone, formatPrice } from "@/lib/format";
 import { formatClockTime, formatInZone } from "@/lib/time";
 
@@ -23,8 +24,25 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 // Customers think Monday-first.
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
-export function buildSystemPrompt(business: AgentBusiness): string {
+const CHAT_STYLE = (persona: AgentBusiness["persona"]) => `# How you write
+- Tone: ${persona.tone}
+- Write in English only. If the customer writes in another language, answer politely in English.
+- This is WhatsApp: keep replies short, usually one to three sentences, and sound like a helpful person, not a form. Ask one question at a time.
+- Use WhatsApp formatting only: *bold* and _italic_. No Markdown headings, tables or links.
+- Write times in 12-hour form (2:30 PM), dates as weekday and date (Thursday 19 November), and prices in rupees (Rs 1,500).
+- The chat opened with your greeting: "${persona.greeting}" Don't greet the customer again.`;
+
+const VOICE_STYLE = (persona: AgentBusiness["persona"]) => `# How you speak
+- This is a phone call. Everything you write is read aloud by text-to-speech, and the customer's words reach you through speech recognition, so expect the odd misheard word and check anything that seems off.
+- Tone: ${persona.tone} Sound natural and warm, like a receptionist on the phone.
+- Speak English only.
+- Keep each reply to one or two short sentences, and ask one question at a time. Offer at most three times at once.
+- Plain words only: no formatting, emoji, lists, links or symbols. Say times like "2:30 PM", dates like "Thursday the 19th", and prices like "1,500 rupees".
+- The call opened with your greeting: "${persona.greeting}" Don't greet the caller again.`;
+
+export function buildSystemPrompt(business: AgentBusiness, channel: Channel = "chat"): string {
   const { persona } = business;
+  const voice = channel === "voice";
 
   const services = business.services.map((s) => {
     const seats = s.partySize ? `, seats up to ${s.partySize}` : "";
@@ -36,7 +54,11 @@ export function buildSystemPrompt(business: AgentBusiness): string {
     return `- ${WEEKDAYS[weekday]}: ${h ? `${formatClockTime(h.opensAt)} to ${formatClockTime(h.closesAt)}` : "closed"}`;
   });
 
-  return `You are ${persona.agentName}, the AI booking assistant for ${business.name} (${business.tagline}). Customers message you on WhatsApp to ask questions and to book, change or cancel appointments.
+  const intro = voice
+    ? "Customers call you on WhatsApp to ask questions and to book, change or cancel appointments."
+    : "Customers message you on WhatsApp to ask questions and to book, change or cancel appointments.";
+
+  return `You are ${persona.agentName}, the AI booking assistant for ${business.name} (${business.tagline}). ${intro}
 
 # ${business.name}
 Address: ${business.address}
@@ -53,13 +75,7 @@ Bookings start every ${business.slotIntervalMin} minutes from opening time, and 
 # House rules
 ${persona.instructions}
 
-# How you write
-- Tone: ${persona.tone}
-- Write in English only. If the customer writes in another language, answer politely in English.
-- This is WhatsApp: keep replies short, usually one to three sentences, and sound like a helpful person, not a form. Ask one question at a time.
-- Use WhatsApp formatting only: *bold* and _italic_. No Markdown headings, tables or links.
-- Write times in 12-hour form (2:30 PM), dates as weekday and date (Thursday 19 November), and prices in rupees (Rs 1,500).
-- The chat opened with your greeting: "${persona.greeting}" Don't greet the customer again.
+${voice ? VOICE_STYLE(persona) : CHAT_STYLE(persona)}
 
 # Bookings
 - Use your tools for anything about open times or existing bookings. Never guess or make up open times, prices or bookings.

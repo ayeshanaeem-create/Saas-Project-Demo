@@ -34,6 +34,11 @@ export type ChatMessage = {
   sentAt: string;
   /** Delivery ticks; outgoing messages only. */
   status?: MessageStatus;
-  /** A notice from the simulator itself (e.g. "the assistant couldn't reply"), shown as a centred pill. */
-  kind?: "notice";
+  /**
+   * "notice": from the simulator itself (e.g. "the assistant couldn't reply"), a centred pill.
+   * "call": a voice call the customer made, shown as a call bubble with its length.
+   */
+  kind?: "notice" | "call";
+  /** Calls only: how long the call lasted. */
+  durationSec?: number;
 };

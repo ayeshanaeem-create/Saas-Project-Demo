@@ -1,6 +1,8 @@
+import { PhoneOutgoing } from "lucide-react";
+
 import { FormattedText } from "@/components/whatsapp/formatted-text";
 import { MessageStatus } from "@/components/whatsapp/message-status";
-import { formatMessageTime } from "@/lib/time";
+import { formatCallDuration, formatMessageTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/simulator";
 
@@ -32,11 +34,25 @@ export function MessageBubble({ message, startsGroup, timeZone }: Props) {
       >
         {startsGroup && <BubbleTail outgoing={outgoing} />}
 
-        <span className="break-words whitespace-pre-wrap">
-          <FormattedText text={message.text} />
-        </span>
-        {/* Reserves room on the last line so the time sits beside the text when it fits. */}
-        <span aria-hidden className={cn("inline-block", outgoing ? "w-[4.75rem]" : "w-14")} />
+        {message.kind === "call" ? (
+          <span className="flex items-center gap-3 py-1 pr-16 pl-1">
+            <span className="flex size-9 items-center justify-center rounded-full bg-wa-text/10">
+              <PhoneOutgoing className="size-4.5" aria-hidden />
+            </span>
+            <span className="flex flex-col">
+              <span className="font-medium">Voice call</span>
+              <span className="text-[12.5px] text-wa-meta">{formatCallDuration(message.durationSec ?? 0)}</span>
+            </span>
+          </span>
+        ) : (
+          <>
+            <span className="break-words whitespace-pre-wrap">
+              <FormattedText text={message.text} />
+            </span>
+            {/* Reserves room on the last line so the time sits beside the text when it fits. */}
+            <span aria-hidden className={cn("inline-block", outgoing ? "w-[4.75rem]" : "w-14")} />
+          </>
+        )}
 
         <span className="absolute right-2 bottom-1 flex items-center gap-0.5 text-[11px] leading-none text-wa-meta">
           <time dateTime={message.sentAt}>{time}</time>

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { loadAgentBusiness } from "@/lib/agent/business";
-import { appendMessages, getOrCreateConversation, withConversationLock } from "@/lib/agent/conversations";
+import { appendMessages, conversationForTurn, withConversationLock } from "@/lib/agent/conversations";
 import { toChatMessages } from "@/lib/agent/history";
 import type { RunAgentTurnInput } from "@/lib/agent/run-agent";
 import { db } from "@/lib/db";
@@ -28,7 +28,7 @@ export type RunScriptedTurnInput = Omit<RunAgentTurnInput, "client"> & {
 export async function runScriptedTurn(input: RunScriptedTurnInput): Promise<void> {
   const now = input.now ?? (() => new Date());
   const delay = input.delay ?? pause;
-  const conversation = await getOrCreateConversation(input.businessId, input.customerId, input.channel);
+  const conversation = await conversationForTurn(input);
 
   await withConversationLock(conversation.id, async () => {
     await appendMessages(
@@ -52,10 +52,12 @@ export async function runScriptedTurn(input: RunScriptedTurnInput): Promise<void
       state: parseScriptState(current.agentState),
       text: input.texts.join("\n"),
       now: now(),
+      channel: input.channel,
     });
 
     for (const reply of outcome.replies) {
-      await delay(typingDelayMs(reply));
+      // On a call, speaking the reply takes the time typing would; don't add dead air.
+      await delay(input.channel === "voice" ? 150 : typingDelayMs(reply));
       const [row] = await appendMessages(conversation.id, [
         { role: "assistant", content: [{ type: "text", text: reply }], text: reply },
       ]);

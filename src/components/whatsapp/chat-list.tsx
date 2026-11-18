@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, EllipsisVertical, MessageCircle, Phone, Search } from "lucide-react";
+import { Camera, EllipsisVertical, MessageCircle, Phone, PhoneOutgoing, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -107,6 +107,7 @@ export function ChatList() {
                         last && (
                           <>
                             {last.direction === "outgoing" && last.status && <MessageStatus status={last.status} />}
+                            {last.kind === "call" && <PhoneOutgoing className="size-3.5 shrink-0" aria-hidden />}
                             <span className="truncate">{stripWhatsAppFormatting(last.text.replace(/\s+/g, " "))}</span>
                           </>
                         )
@@ -143,7 +144,7 @@ export function ChatList() {
         </span>
         <span
           aria-disabled
-          title="Calls arrive in Phase 6"
+          title="Call history isn't part of the demo. Calls show in each chat."
           className="flex flex-col items-center justify-center gap-1 text-[12px] text-wa-meta"
         >
           <span className="flex h-7 w-14 items-center justify-center">

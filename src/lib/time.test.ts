@@ -4,6 +4,7 @@ import {
   addDays,
   clockToMinutes,
   daysBetween,
+  formatCallDuration,
   formatChatDay,
   formatChatListTime,
   formatClockTime,
@@ -119,5 +120,14 @@ describe("chat time labels", () => {
     expect(formatChatListTime(at("2026-11-17", "09:15"), KARACHI, now)).toBe("Yesterday");
     expect(formatChatListTime(at("2026-11-14", "09:15"), KARACHI, now)).toBe("Saturday");
     expect(formatChatListTime(at("2026-11-01", "09:15"), KARACHI, now)).toBe("01/11/2026");
+  });
+});
+
+describe("formatCallDuration", () => {
+  it("formats like a call timer", () => {
+    expect(formatCallDuration(0)).toBe("0:00");
+    expect(formatCallDuration(7)).toBe("0:07");
+    expect(formatCallDuration(83)).toBe("1:23");
+    expect(formatCallDuration(3725)).toBe("1:02:05");
   });
 });

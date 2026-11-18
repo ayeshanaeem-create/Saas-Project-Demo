@@ -24,15 +24,13 @@ export function ChatHeader({ business, typing }: { business: SimulatorBusiness; 
         </p>
       </div>
 
-      <button
-        type="button"
-        disabled
-        aria-label="Voice call (coming in a later phase)"
-        title="Voice calls arrive in Phase 6"
-        className="flex size-10 items-center justify-center rounded-full text-wa-icon opacity-60"
+      <Link
+        href={`/simulator/${business.slug}/call`}
+        aria-label={`Voice call ${business.name}`}
+        className="flex size-10 items-center justify-center rounded-full text-wa-icon hover:bg-wa-hover"
       >
         <Phone className="size-5" aria-hidden />
-      </button>
+      </Link>
       <span aria-hidden className="flex size-10 items-center justify-center text-wa-icon">
         <EllipsisVertical className="size-5" />
       </span>
