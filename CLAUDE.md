@@ -27,14 +27,14 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 - **Phase 6 (voice calls): done.** The phone icon in a chat opens `/simulator/[slug]/call`: ringing, the spoken greeting, then listen → agent → speak until hang-up. There are live captions, Mute and Interrupt, a call bubble in the chat afterwards, and each call is its own voice conversation on the dashboard. Tested in headless Edge with fake speech APIs; real speech needs Chrome or Edge with a microphone and an internet connection.
 - **Phase 7 (demo polish): done.** The landing page is at `/`. The live demo at `/demo/[slug]` shows the simulator in an iframe beside a live panel: scenario buttons, "Booked by the agent" and the latest transcript. "Reset demo" (in the demo top bar and the dashboard sidebar) restores the seed data. There are error and 404 pages, an app icon and a README.
 - All seven planned phases are done. The Claude agent still hasn't run against the live API, because the user has no key yet.
-- **Deploy and brand (branch `deploy-and-brand`): deploy done; branding hasn't started.** The deploy pieces:
+- **Deploy and brand (branch `deploy-and-brand`): done.** The brand design (green tokens, Figtree and Bricolage Grotesque, 18px base, pricing section) is described under "Brand design" below. The deploy pieces:
   - one libSQL driver for both the local file and a hosted Turso database (`src/lib/db-adapter.ts`);
   - `npm run turso:migrate` / `turso:seed`;
   - an optional `DEMO_PASSWORD` sign-in prompt (`src/proxy.ts`).
 
   A mobile layout pass is also on this branch: every page was checked at 360, 768 and 1280px (see "Responsive layout" below).
 
-  The app is live on Vercel, which deploys `main` from GitHub (`origin`) on every push. Its data is in a Turso database in `aws-us-east-1`, next to Vercel's default function region. The hosted database was migrated and seeded on 2026-11-18. No `DEMO_PASSWORD` is set yet.
+  The app is live on Vercel, which deploys `main` from GitHub (`origin`) on every push. The repository is public: while it was private, Vercel's free plan rejected pushes whose commit author isn't the Vercel account owner. Its data is in a Turso database in `aws-us-east-1`, next to Vercel's default function region. The hosted database was migrated and seeded on 2026-11-18. No `DEMO_PASSWORD` is set yet.
 
 ## Product vision
 
