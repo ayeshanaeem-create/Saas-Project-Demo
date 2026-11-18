@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { LayoutDashboard, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -19,10 +19,16 @@ export default function Home() {
             database.
           </p>
         </div>
-        <Link href="/simulator" className={buttonVariants({ size: "lg" })}>
-          <MessageCircle aria-hidden />
-          Open the chat simulator
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "lg" })}>
+            <LayoutDashboard aria-hidden />
+            Owner dashboard
+          </Link>
+          <Link href="/simulator" className={buttonVariants({ size: "lg" })}>
+            <MessageCircle aria-hidden />
+            Open the chat simulator
+          </Link>
+        </div>
       </header>
 
       <Suspense fallback={<BusinessGridSkeleton />}>

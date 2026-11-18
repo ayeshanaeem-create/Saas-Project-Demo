@@ -16,7 +16,15 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 - **Phase 4 (agents): done; the Claude agent hasn't run against the live API yet.** `POST /api/agent/chat` is answered by one of two agents, both using the booking engine and saving every message:
   - **Scripted agent** (`src/lib/agent/scripted/`): rule-based, free, needs no key. It reads services, dates, times, party sizes and names with regex parsers, and walks the customer through booking, cancelling and rescheduling. **This is what the demo runs on for now**, because the user has no API key yet.
   - **Claude agent** (`run-agent.ts`): a tool loop on Claude. Covered by tests with a fake client; it switches on automatically once `ANTHROPIC_API_KEY` is set.
-- Next: Phase 5, the owner dashboard.
+- **Phase 5 (owner dashboard): done.** `/dashboard/[slug]` has five sections:
+  - **Overview:** stats, today's schedule, handoff alerts, recent chats.
+  - **Bookings:** a week view, staff booking and cancelling.
+  - **Conversations:** a list, plus transcripts that show the Claude agent's tool calls.
+  - **Services & hours:** editors for both.
+  - **Agent:** the persona editor, plus which agent is active.
+
+  The overview, bookings and conversations pages refresh every 5 seconds, so simulator activity shows up by itself.
+- Next: Phase 6, voice calls.
 
 ## Product vision
 
@@ -101,10 +109,14 @@ src/
       page.tsx                # chat list
       [slug]/page.tsx         # one chat (own <Suspense> around params)
       not-found.tsx
-    dashboard/[slug]/         # †
-      page.tsx                # overview: today's bookings, stats
-      bookings/ conversations/ services/ agent/
-      actions.ts              # Server Actions for dashboard mutations
+    dashboard/
+      page.tsx                # redirects to the first business
+      not-found.tsx
+      [slug]/
+        layout.tsx            # sidebar (business switcher + sections)
+        page.tsx              # overview: stats, today's schedule, handoffs, recent chats
+        bookings/ conversations/ conversations/[id]/ services/ agent/
+        actions.ts            # Server Actions: staff booking/cancel, services, hours, persona, resolve handoff
     api/agent/chat/route.ts   # POST: one customer turn, streams AgentEvents as NDJSON
     layout.tsx
     globals.css               # shadcn tokens + wa-* simulator tokens + wa-chat-wallpaper utility
@@ -115,7 +127,8 @@ src/
                               #   toggle), status-bar, chat-list, chat-screen, chat-header,
                               #   message-list, message-bubble, message-status (ticks), composer,
                               #   formatted-text, business-avatar, chat-skeleton; † call-screen
-    dashboard/                # †
+    dashboard/                # nav, booking list/row, new-booking dialog, cancel button, service/hours/
+                              #   persona editors, conversation list, transcript view, badges, auto-refresh
     marketing/                # †
   lib/
     db.ts                     # Prisma client singleton (server-only)
@@ -124,6 +137,10 @@ src/
     format.ts                 # price and duration formatting
     whatsapp-format.ts        # *bold* _italic_ ~strike~ ```mono``` parser (+ test)
     utils.ts                  # shadcn's cn()
+    dashboard/
+      queries.ts              # read models for the dashboard (server-only)
+      schemas.ts              # form validation + FormState, phone normalizing (+ test)
+      transcript.ts           # stored messages → readable transcript with tool steps (+ test)
     simulator/
       constants.ts            # SIMULATOR_TIMEZONE, SIMULATOR_CUSTOMER_PHONE
       chats.ts                # saved chats for the simulator (server-only)
@@ -151,6 +168,7 @@ src/
       synthesis.ts            # speechSynthesis wrapper with a sentence queue
   hooks/
     use-now.ts                # hydration-safe clock (useNow / useClientNow)
+    use-form-action.ts        # Server Action forms that keep input on validation errors
                               # † use-voice-call.ts
   types/
     domain.ts                 # zod enums for the String status/category columns
@@ -177,7 +195,15 @@ The `/simulator` layout loads each business's saved chat (`src/lib/simulator/cha
    - **Claude:** `runAgentTurn` (`src/lib/agent/run-agent.ts`) takes a per-conversation lock, saves the customer's messages, then calls Claude with the business's tools. It repeats until Claude stops calling tools, at most `MAX_TOOL_ROUNDS` times, saving each step and emitting each reply bubble as soon as it exists.
    - **Scripted:** `runScriptedTurn` takes the same lock and saves the same rows. It runs `runScript()` against the conversation's saved `agentState` and sends each reply after a typing delay. Its replies are plain assistant text, so a conversation can carry on later with Claude.
 3. The turn keeps running if the browser disconnects, so a booking in progress still completes. The simulator sees the result next time it loads, since chats come from the DB.
-4. The dashboard picks up new bookings and messages. The mechanism (polling or server-sent events) is chosen in the dashboard phase.
+4. The dashboard picks up new bookings and messages by polling: `<AutoRefresh />` calls `router.refresh()` every 5 seconds while the tab is visible.
+
+### Owner dashboard
+
+- **No login** (demo): any business's dashboard is reachable by its slug. Every Server Action in `dashboard/[slug]/actions.ts` is bound to a slug and only touches that business's rows (`updateMany`/`findFirst` with `businessId`).
+- **Writes:** bookings go through the booking engine (`source: "staff"`; cancelling passes no `customerId`). Staff bookings match customers by normalized phone (`normalizePakistaniPhone`), and the typed name overwrites the stored one. Services, hours and persona are written directly.
+- **After a change:** actions call `refresh()` from `next/cache` so the page re-renders with fresh data. They return a `FormState` (`status`, `message`, `fieldErrors`, `alternatives`).
+- **Forms** use `useFormAction` (`onSubmit` + `useActionState`), not `<form action>`. React resets forms after `action` submissions even on validation errors, which would wipe the user's input. Controls are native `<select>`s (`NativeSelect`) and Switches paired with hidden inputs, which submit reliably.
+- **Editing services or hours never changes existing bookings.** A hidden service (`isActive: false`) disappears from the agents and the simulator.
 
 ### Voice call flow
 
@@ -277,6 +303,7 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 ## Demo rules
 
 - Seed bookings are placed relative to today, so the calendar looks busy but still has open slots. A seed booking that lands on a closed day or outside that day's hours is skipped, and the seed log says so.
-- "Reset demo" reseeds the database. `npm run db:seed` wipes every table first, so it's safe to rerun.
+- "Reset demo" reseeds the database. `npm run db:seed` wipes every table first, so it's safe to rerun. But the user keeps their own test chats and bookings in the dev DB, so don't reseed without asking.
+- **The simulator phone is shared.** The user tries the simulator while Claude runs browser tests, and both act as the one simulator customer, with one name on file. In automated browser tests, use a business the user has no chat with, record the DB state first, and afterwards delete only the rows the test created. Never wipe tables or reset the customer's name.
 - All customer names and phone numbers are fictional.
 - Voice needs Chrome or Edge, since `SpeechRecognition` isn't available elsewhere. Feature-detect it and show a notice in other browsers. Speech recognition and speech output both use English (`en-US`).

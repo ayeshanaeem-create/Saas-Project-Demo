@@ -1,4 +1,4 @@
-import { Bot, CalendarCheck, Clock, MapPin, MessageCircle } from "lucide-react";
+import { Bot, CalendarCheck, Clock, LayoutDashboard, MapPin, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -90,14 +90,24 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
           <MapPin className="size-4 shrink-0" aria-hidden />
           <span className="truncate">{business.address}</span>
         </span>
-        <Link
-          href={`/simulator/${business.slug}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-          aria-label={`Chat with ${business.name}`}
-        >
-          <MessageCircle aria-hidden />
-          Chat
-        </Link>
+        <span className="flex shrink-0 gap-2">
+          <Link
+            href={`/dashboard/${business.slug}`}
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+            aria-label={`${business.name} dashboard`}
+          >
+            <LayoutDashboard aria-hidden />
+            Dashboard
+          </Link>
+          <Link
+            href={`/simulator/${business.slug}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            aria-label={`Chat with ${business.name}`}
+          >
+            <MessageCircle aria-hidden />
+            Chat
+          </Link>
+        </span>
       </CardFooter>
     </Card>
   );
