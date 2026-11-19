@@ -43,8 +43,8 @@ async function Services({ params }: Pick<PageProps<"/dashboard/[slug]/services">
         {services.map((service) => (
           <ServiceEditor key={service.id} slug={slug} service={service} tables={tables} />
         ))}
-        <details className="group rounded-xl border border-dashed">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+        <details className="group rounded-xl border-2 border-dashed border-primary/35 bg-card transition-colors open:border-solid hover:border-primary/60">
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-primary transition-colors hover:bg-tint">
             <Plus className="size-4" aria-hidden />
             {tables ? "Add a table size" : "Add a service"}
           </summary>

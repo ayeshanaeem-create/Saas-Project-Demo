@@ -1,4 +1,4 @@
-import { Bot, CalendarCheck, CalendarDays, ExternalLink, TriangleAlert } from "lucide-react";
+import { ArrowRight, Bot, CalendarCheck, CalendarDays, ExternalLink, TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,6 +16,10 @@ import { getBusinessBySlug, getOverview } from "@/lib/dashboard/queries";
 import { formatInZone } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Overview" };
+
+// "All bookings →" style links beside the section headings.
+const SEE_ALL_LINK =
+  "-my-2 flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-bold text-primary transition-colors hover:bg-tint";
 
 export default function OverviewPage({ params }: PageProps<"/dashboard/[slug]">) {
   return (
@@ -65,7 +69,7 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Today" value={stats.today} hint="Bookings today" icon={CalendarCheck} />
         <StatCard label="Next 7 days" value={stats.next7Count} hint="Upcoming bookings" icon={CalendarDays} />
-        <StatCard label="Booked by AI" value={stats.agentThisWeek} hint="In the last 7 days" icon={Bot} />
+        <StatCard label="Booked by AI" value={stats.agentThisWeek} hint="In the last 7 days" icon={Bot} tone="brand" />
         <StatCard label="Needs a person" value={stats.handoffs} hint="Handed-off chats" icon={TriangleAlert} tone="attention" />
       </div>
 
@@ -75,8 +79,9 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
             <h2 id="today-heading" className="text-[22px]">
               Today&apos;s schedule
             </h2>
-            <Link href={`/dashboard/${slug}/bookings`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">
-              All bookings →
+            <Link href={`/dashboard/${slug}/bookings`} className={SEE_ALL_LINK}>
+              All bookings
+              <ArrowRight className="size-4" aria-hidden />
             </Link>
           </div>
           {todaysBookings.length === 0 ? (
@@ -97,8 +102,9 @@ async function Overview({ params }: Pick<PageProps<"/dashboard/[slug]">, "params
             <h2 id="chats-heading" className="text-[22px]">
               Recent conversations
             </h2>
-            <Link href={`/dashboard/${slug}/conversations`} className="-my-2 py-2 text-sm text-muted-foreground hover:text-foreground">
-              All conversations →
+            <Link href={`/dashboard/${slug}/conversations`} className={SEE_ALL_LINK}>
+              All conversations
+              <ArrowRight className="size-4" aria-hidden />
             </Link>
           </div>
           <ConversationList slug={slug} conversations={recentConversations} timeZone={business.timezone} now={now} />

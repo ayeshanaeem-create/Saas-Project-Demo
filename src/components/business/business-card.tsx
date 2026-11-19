@@ -23,23 +23,23 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
   return (
     // @container: the footer stacks when the card itself is narrow (phones, and the
     // two-column grid on tablets), not just on small screens.
-    <Card className="@container h-full">
+    <Card className="@container h-full shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:ring-primary/35 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <CardHeader>
         <div className="flex items-center gap-3">
           <span
             aria-hidden
-            className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-tint text-2xl"
+            className="flex size-13 shrink-0 items-center justify-center rounded-2xl bg-linear-135 from-tint to-sun/35 text-2xl shadow-inner"
           >
             {business.emoji}
           </span>
           <div className="min-w-0">
             {/* Wraps rather than truncating, so a long name never pushes the badge off the card. */}
-            <CardTitle className="text-balance">{business.name}</CardTitle>
+            <CardTitle className="text-lg font-bold text-balance text-heading">{business.name}</CardTitle>
             <CardDescription>{business.tagline}</CardDescription>
           </div>
         </div>
         <CardAction>
-          <Badge variant="outline">{categoryLabel[business.category]}</Badge>
+          <Badge className="bg-tint font-bold text-primary">{categoryLabel[business.category]}</Badge>
         </CardAction>
       </CardHeader>
 
@@ -47,16 +47,16 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         <ul className="flex flex-col gap-2 text-muted-foreground">
           {persona && (
             <li className="flex gap-2">
-              <Bot className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <Bot className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
               <span>
-                <span className="font-medium text-foreground">{persona.agentName}</span>
+                <span className="font-semibold text-foreground">{persona.agentName}</span>
                 {" · "}
                 {persona.tone}
               </span>
             </li>
           )}
           <li className="flex gap-2">
-            <Clock className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <Clock className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
             {hoursToday ? (
               <span>
                 Open today {formatClockTime(hoursToday.opensAt)} – {formatClockTime(hoursToday.closesAt)}
@@ -66,7 +66,7 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
             )}
           </li>
           <li className="flex gap-2">
-            <CalendarCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <CalendarCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
             <span>
               {business.bookingsToday} {business.bookingsToday === 1 ? "booking" : "bookings"} today ·{" "}
               {business.upcomingBookings} upcoming
@@ -81,7 +81,8 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
             <li key={service.id} className="flex items-baseline justify-between gap-4">
               <span className="font-medium">{service.name}</span>
               <span className="shrink-0 text-muted-foreground tabular-nums">
-                {formatDuration(service.durationMin)} · {formatPrice(service.price, business.currency)}
+                {formatDuration(service.durationMin)} ·{" "}
+                <span className="font-semibold text-heading">{formatPrice(service.price, business.currency)}</span>
               </span>
             </li>
           ))}
@@ -96,7 +97,7 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
         <span className="flex shrink-0 gap-2">
           <Link
             href={`/dashboard/${business.slug}`}
-            className={buttonVariants({ variant: "ghost", size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
+            className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
             aria-label={`${business.name} dashboard`}
           >
             <LayoutDashboard aria-hidden />
@@ -104,7 +105,7 @@ export function BusinessCard({ business }: { business: BusinessSummary }) {
           </Link>
           <Link
             href={`/demo/${business.slug}`}
-            className={buttonVariants({ variant: "outline", size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
+            className={buttonVariants({ size: "sm", className: "flex-1 pointer-coarse:h-9 @md:flex-none" })}
             aria-label={`Try the ${business.name} demo`}
           >
             <MessageCircle aria-hidden />

@@ -34,6 +34,8 @@ The build runs in phases, and each phase is agreed in conversation before it sta
 
   A mobile layout pass is also on this branch: every page was checked at 360, 768 and 1280px (see "Responsive layout" below).
 
+  A bolder look followed on 2026-11-19: bold gradient buttons with coloured shadows, a logo mark, a coloured hero and call-to-action band, the tinted `canvas` page background behind cards, and gradient active states in the dashboard and demo navigation. See "Brand design" below.
+
   The app is live on Vercel, which deploys `main` from GitHub (`origin`) on every push. The repository is public: while it was private, Vercel's free plan rejected pushes whose commit author isn't the Vercel account owner. Its data is in a Turso database in `aws-us-east-1`, next to Vercel's default function region. The hosted database was migrated and seeded on 2026-11-18. No `DEMO_PASSWORD` is set yet.
 
 ## Product vision
@@ -141,6 +143,7 @@ src/
     globals.css               # shadcn tokens + wa-* simulator tokens + wa-chat-wallpaper utility
   components/
     ui/                       # shadcn-generated; add via the shadcn CLI
+    brand/                    # logo.tsx: LogoMark (gradient tile) and Logo (mark + wordmark)
     business/                 # business-card.tsx
     whatsapp/                 # simulator-provider (state), simulator-shell (phone frame + theme
                               #   toggle), status-bar, chat-list, chat-screen, chat-header,
@@ -338,18 +341,34 @@ Services, prices, hours and house rules are in the system prompt, so there are n
 - **Stale dev server:** if the dev server says an exported function "is not a function" although it exists, its module graph is stale, typically after `next build` ran alongside it. Restart `npm run dev`. Restart it after Prisma schema changes too, so it loads the new client.
 - **Responsive layout:** every page must work from 360px wide with no sideways scrolling.
   - **Dashboard below `lg`:** the sections become a tab bar fixed to the bottom of the screen (`DashboardNav`), so the layout adds `pb-24`. The sidebar's extra links move to the header (`HeaderActions`).
-  - **Demo page below `lg`:** `CompactIntro` puts the title and a swipeable row of suggested messages above the phone, and the live panel hides its own copies.
+  - **Demo page below `lg`:** `CompactIntro` puts the title and a swipeable row of suggested messages above the phone, and the live panel hides its own copies. At every width the business tabs sit in their own row under the logo and buttons, because one row doesn't fit the bold buttons. The phone frame's height (`100dvh-10.5rem`) allows for that taller header.
+  - **Landing header on phones:** only the logo and "Live demo" fit, so Pricing and Dashboard are hidden below `sm`.
+  - **Bookings week buttons on phones:** "week" is screen-reader-only below `sm`, so Previous, Today and Next fit in 360px.
   - **Simulator below `sm`:** it fills the screen. The chat list header carries the dark-mode toggle and the way back (`useSimulatorTheme`, `useEmbedded`). There is no way back inside the demo iframe.
   - **Touch targets:** small buttons get `pointer-coarse:h-9`.
   - **Cards in grids:** use container queries (`@container`, `@md:`), not viewport breakpoints.
   - **Tall dialogs:** get `max-h-[calc(100dvh-2rem)] overflow-y-auto`.
 - **Brand design** (tokens in `globals.css`, light and dark):
   - **Colours:** `primary` (#0E7A4F), `primary-hover`, `heading`, `muted-foreground`, `border`, `tint` (light green for icon backgrounds and selected states) and `outline-hover`. Use these, not `emerald-*` classes.
-  - **Fonts:** Figtree for body and buttons, Bricolage Grotesque (`font-heading`) for headings.
+  - **Gradient:** `bg-linear-135 from-brand-from to-brand-to` (emerald to teal) fills solid buttons, the logo mark, active nav items, the "Booked by AI" stat and the call-to-action band. White text stays above 4.5:1 on it. Its coloured shadow uses `var(--primary-glow)`, e.g. `shadow-[0_8px_20px_-8px_var(--primary-glow)]`.
+  - **Accent and canvas:** `sun` / `sun-foreground` is the warm accent for small highlights ("Most popular", hero glow, alternate feature tiles); never put white text on it. `canvas` is the tinted page background behind white cards (dashboard, demo page, landing sections).
+  - **Fonts:** Figtree for body and buttons (400–700), Bricolage Grotesque (`font-heading`) for headings (600–800, 800 for the logo wordmark).
+  - **Logo:** use `<Logo />` / `<LogoMark />` from `src/components/brand/logo.tsx` inside a link, not plain "BookMate AI" text.
   - **Base size:** `html` is 18px (`112.5%`), so rem sizes scale. `text-xs` is redefined as 14px, the smallest text allowed.
   - **Headings:** h1, h2 and h3 get their size, font and colour from the base layer, at 40–64px, 30–44px and 22px. A page heading should carry no size class. Compact headings (dashboard and demo-panel sections, booking day labels, dialog titles) set their own size.
   - **The WhatsApp simulator (`.font-wa`)** keeps its own colours and fonts. Its phone frame is sized in px.
   - **`buttonVariants()`** returns merged classes, so it works on a plain `<Link>`.
+  - **Buttons are bold and coloured** (`button.tsx`, theming only): every variant is `font-bold` with a 2px border, so all variants have the same height.
+    - `default`: the gradient with a coloured shadow, lifting on hover.
+    - `outline`: green border and text on white.
+    - `ghost`: green text.
+    - `secondary`: a tint fill.
+    - `destructive`: solid red, for confirming in a dialog.
+    - `destructive-outline`: a red outline, for per-row actions such as a booking's Cancel.
+    - `inverse`: white, for coloured backgrounds.
+
+    Don't override a button's colours with `text-muted-foreground`; pick a variant.
+  - **No quotes in comments inside `@theme inline`.** A comment there containing `"Most popular"` made the CSS compiler silently drop the rest of `globals.css`, with no error in the dev log. Every token and the heading styles vanished, and the page turned grey. Quotes in comments elsewhere in the file compile fine. If the page suddenly loses its colours, check the `@theme` comments first.
 - **Money:** integers in whole PKR. Format for display only.
 - **Time:** store `DateTime` in UTC. Convert to the business timezone only for display and in prompts. All timezone math lives in `src/lib/time.ts`.
 - **SQLite:** no Prisma enums. Use `String` columns with TS string-literal unions validated by zod. Store JSON payloads as `String` and parse them with zod. This keeps a later move to Postgres simple.

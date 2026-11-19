@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
+import { Logo } from "@/components/brand/logo";
 import { AutoRefresh } from "@/components/dashboard/auto-refresh";
 import { ChannelBadge } from "@/components/dashboard/badges";
 import { PageSkeleton } from "@/components/dashboard/page-skeleton";
@@ -26,7 +27,7 @@ export const metadata: Metadata = { title: "Live demo · BookMate AI" };
 // app) next to what the business sees, updating live.
 export default function DemoPage({ params }: PageProps<"/demo/[slug]">) {
   return (
-    <div className="flex min-h-dvh flex-col bg-muted/40">
+    <div className="flex min-h-dvh flex-col bg-canvas">
       <Suspense fallback={<div className="h-16 border-b bg-background" />}>
         <DemoHeader params={params} />
       </Suspense>
@@ -55,15 +56,16 @@ async function DemoHeader({ params }: Params) {
   const businesses = await listBusinesses();
 
   return (
-    <header className="border-b bg-background">
-      {/* Below lg the business tabs get their own swipeable row under the logo and buttons. */}
+    <header className="border-b bg-background shadow-sm">
+      {/* The business tabs get their own swipeable row under the logo and buttons, on every
+          screen size: the tabs and buttons together are wider than the header. */}
       <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/" className="mr-auto font-heading text-lg font-semibold tracking-tight lg:mr-0">
-          BookMate AI <span className="font-normal text-muted-foreground">· live demo</span>
+        <Link href="/" aria-label="BookMate AI home, live demo" className="mr-auto">
+          <Logo suffix="live demo" />
         </Link>
         <nav
           aria-label="Demo businesses"
-          className="order-last -mx-1 flex basis-full gap-1 overflow-x-auto px-1 [scrollbar-width:none] lg:order-none lg:basis-auto lg:flex-1"
+          className="order-last -mx-1 flex basis-full gap-1 overflow-x-auto px-1 [scrollbar-width:none]"
         >
           {businesses.map((b) => (
             <Link
@@ -71,8 +73,10 @@ async function DemoHeader({ params }: Params) {
               href={`/demo/${b.slug}`}
               aria-current={b.slug === slug ? "page" : undefined}
               className={cn(
-                "shrink-0 rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition-colors",
-                b.slug === slug ? "bg-tint font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-all",
+                b.slug === slug
+                  ? "bg-linear-135 from-brand-from to-brand-to font-bold text-white shadow-[0_6px_14px_-6px_var(--primary-glow)]"
+                  : "text-muted-foreground hover:bg-tint hover:text-primary",
               )}
             >
               {b.emoji} {b.name}
@@ -118,7 +122,7 @@ async function CompactIntro({ params }: Params) {
 function PhoneFrame({ children }: { children: ReactNode }) {
   // A slimmer bezel on phones, where the frame sits inside a real phone screen.
   return (
-    <div className="mx-auto h-[75dvh] min-h-[28rem] w-full max-w-[395px] overflow-hidden rounded-[2rem] border-[6px] border-neutral-950 bg-background shadow-2xl sm:rounded-[2.5rem] sm:border-[10px] lg:sticky lg:top-6 lg:h-[min(812px,calc(100dvh-8rem))] lg:min-h-0 lg:w-[395px]">
+    <div className="mx-auto h-[75dvh] min-h-[28rem] w-full max-w-[395px] overflow-hidden rounded-[2rem] border-[6px] border-neutral-950 bg-background shadow-2xl sm:rounded-[2.5rem] sm:border-[10px] lg:sticky lg:top-6 lg:h-[min(812px,calc(100dvh-10.5rem))] lg:min-h-0 lg:w-[395px]">
       {children ?? <Skeleton className="h-full w-full rounded-none" />}
     </div>
   );
@@ -233,8 +237,10 @@ function Panel({
 }) {
   return (
     <section className={cn("flex min-w-0 flex-col gap-3", className)}>
-      <h2 className="flex items-center gap-2 text-[22px]">
-        <Icon className="size-5 text-muted-foreground" aria-hidden />
+      <h2 className="flex items-center gap-2.5 text-[22px]">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-tint text-primary">
+          <Icon className="size-[18px]" aria-hidden />
+        </span>
         {title}
         {aside}
       </h2>

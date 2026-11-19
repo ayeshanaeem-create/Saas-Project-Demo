@@ -36,7 +36,7 @@ async function Conversation({ params }: Pick<PageProps<"/dashboard/[slug]/conver
   return (
     <div className="flex flex-col gap-6">
       <AutoRefresh />
-      <Link href={`/dashboard/${slug}/conversations`} className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <Link href={`/dashboard/${slug}/conversations`} className="-mx-2 flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-bold text-primary transition-colors hover:bg-tint">
         <ArrowLeft className="size-4" aria-hidden />
         Conversations
       </Link>

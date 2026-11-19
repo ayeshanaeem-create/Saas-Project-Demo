@@ -32,9 +32,9 @@ export function ScenarioButtons({
             <button
               type="button"
               onClick={() => sendToPhone(s.message)}
-              className="flex max-w-60 cursor-pointer flex-col items-start gap-0.5 rounded-xl border bg-card px-3 py-2 text-left text-sm transition-colors active:border-primary/50 active:bg-tint"
+              className="flex max-w-60 cursor-pointer flex-col items-start gap-0.5 rounded-xl border-2 border-primary/25 bg-card px-3 py-2 text-left text-sm shadow-sm transition-colors active:border-primary active:bg-tint"
             >
-              <span className="text-xs text-muted-foreground tabular-nums">
+              <span className="text-xs font-bold text-primary tabular-nums">
                 {i + 1}. {s.label}
               </span>
               <span className="max-w-full truncate">“{s.message}”</span>
@@ -52,16 +52,18 @@ export function ScenarioButtons({
           <button
             type="button"
             onClick={() => sendToPhone(s.message)}
-            className="group flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/50 hover:bg-tint"
+            className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border-2 border-transparent bg-card px-3 py-2.5 text-left text-sm shadow-sm ring-1 ring-border transition-all hover:-translate-y-px hover:border-primary/60 hover:bg-tint hover:shadow-md hover:ring-transparent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground tabular-nums">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-linear-135 from-brand-from to-brand-to text-xs font-bold text-white tabular-nums shadow-[0_4px_10px_-4px_var(--primary-glow)]">
               {i + 1}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-xs text-muted-foreground">{s.label}</span>
-              <span className="block truncate">“{s.message}”</span>
+              <span className="block text-xs font-bold text-primary">{s.label}</span>
+              <span className="block truncate font-medium">“{s.message}”</span>
             </span>
-            <Send className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tint text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+              <Send className="size-4" aria-hidden />
+            </span>
           </button>
         </li>
       ))}

@@ -64,10 +64,11 @@ async function Bookings({ params, searchParams }: PageProps<"/dashboard/[slug]/b
         }
       />
 
+      {/* On phones "week" is only for screen readers, so three bold buttons fit in 360px. */}
       <nav aria-label="Weeks" className="flex items-center gap-2">
         <Link href={weekLink(addDays(from, -DAYS))} className={buttonVariants({ variant: "outline", size: "sm", className: "pointer-coarse:h-9" })}>
           <ChevronLeft aria-hidden />
-          Previous week
+          Previous<span className="max-sm:sr-only">&nbsp;week</span>
         </Link>
         {from !== today && (
           <Link href={weekLink(today)} className={buttonVariants({ variant: "ghost", size: "sm", className: "pointer-coarse:h-9" })}>
@@ -75,7 +76,7 @@ async function Bookings({ params, searchParams }: PageProps<"/dashboard/[slug]/b
           </Link>
         )}
         <Link href={weekLink(addDays(from, DAYS))} className={buttonVariants({ variant: "outline", size: "sm", className: "pointer-coarse:h-9" })}>
-          Next week
+          Next<span className="max-sm:sr-only">&nbsp;week</span>
           <ChevronRight aria-hidden />
         </Link>
       </nav>

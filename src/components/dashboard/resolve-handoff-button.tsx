@@ -10,7 +10,6 @@ export function ResolveHandoffButton({ slug, conversationId }: { slug: string; c
   const [pending, startTransition] = useTransition();
   return (
     <Button
-      variant="outline"
       disabled={pending}
       onClick={() => startTransition(async () => void (await resolveHandoffAction(slug, conversationId)))}
     >

@@ -43,7 +43,7 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
           id="business-switcher"
           value={slug}
           onChange={(e) => switchBusiness(e.target.value)}
-          className="h-10 w-full min-w-0 cursor-pointer rounded-lg border border-input bg-background px-2.5 text-base font-medium outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 lg:h-9 lg:text-sm"
+          className="h-10 w-full min-w-0 cursor-pointer rounded-xl border-2 border-primary/25 bg-card px-2.5 text-base font-semibold text-heading outline-none transition-colors hover:border-primary/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 lg:text-sm"
         >
           {businesses.map((b) => (
             <option key={b.slug} value={b.slug}>
@@ -63,8 +63,10 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
                 href={segment ? `${base}/${segment}` : base}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                  active ? "bg-tint font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all",
+                  active
+                    ? "bg-linear-135 from-brand-from to-brand-to font-bold text-white shadow-[0_8px_18px_-8px_var(--primary-glow)]"
+                    : "text-muted-foreground hover:bg-tint hover:text-primary",
                 )}
               >
                 <Icon className="size-4" aria-hidden />
@@ -85,11 +87,16 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
                 href={segment ? `${base}/${segment}` : base}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-xs leading-none transition-colors",
-                  active ? "font-medium text-primary" : "text-muted-foreground",
+                  "flex flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-xs leading-none font-medium transition-colors",
+                  active ? "font-bold text-primary" : "text-muted-foreground",
                 )}
               >
-                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-tint")}>
+                <span
+                  className={cn(
+                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                    active && "bg-linear-135 from-brand-from to-brand-to text-white shadow-[0_6px_14px_-6px_var(--primary-glow)]",
+                  )}
+                >
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <span className="max-w-full truncate">{short}</span>
@@ -102,16 +109,19 @@ export function DashboardNav({ businesses, slug }: { businesses: Business[]; slu
       <div className="hidden flex-col gap-1 border-t pt-4 lg:flex">
         <Link
           href={`/simulator/${slug}`}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-tint"
         >
           <ExternalLink className="size-4" aria-hidden />
           Open chat simulator
         </Link>
-        <Link href="/" className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-tint"
+        >
           <House className="size-4" aria-hidden />
           All businesses
         </Link>
-        <div className="mt-2 px-1">
+        <div className="mt-1">
           <ResetDemoButton variant="ghost" />
         </div>
       </div>

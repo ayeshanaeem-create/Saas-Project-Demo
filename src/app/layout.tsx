@@ -8,13 +8,15 @@ import "./globals.css";
 const figtree = Figtree({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  // 700: buttons and other bold labels.
+  weight: ["400", "500", "600", "700"],
 });
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
-  weight: ["600", "700"],
+  // 800: the logo wordmark.
+  weight: ["600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({

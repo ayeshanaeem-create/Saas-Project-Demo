@@ -15,6 +15,16 @@
   --color-primary-hover: var(--primary-hover);
   --color-tint: var(--tint);
   --color-outline-hover: var(--outline-hover);
+  /* Bold buttons and highlights: an emerald-to-teal gradient (bg-linear-135 from-brand-from to-brand-to) */
+  --color-brand-from: var(--brand-from);
+  --color-brand-to: var(--brand-to);
+  --color-brand-hover-from: var(--brand-hover-from);
+  --color-brand-hover-to: var(--brand-hover-to);
+  /* Warm accent for small highlights: the Most popular badge, hero glow, feature tiles */
+  --color-sun: var(--sun);
+  --color-sun-foreground: var(--sun-foreground);
+  /* Page background behind cards (dashboard, demo, landing sections) */
+  --color-canvas: var(--canvas);
   /* Smallest text size: 14px at the 18px base (labels, timestamps, badges). */
   --text-xs: 0.7778rem;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -123,6 +133,16 @@
   --tint: #e3f4ea;
   /* Outline button hover */
   --outline-hover: #eef4f1;
+  /* Gradient stops. White text stays above 4.5:1 across the whole gradient. */
+  --brand-from: #0d8452;
+  --brand-to: #0b6e66;
+  --brand-hover-from: #0a6f45;
+  --brand-hover-to: #095a54;
+  /* Coloured shadow under solid buttons and highlighted cards */
+  --primary-glow: rgb(14 122 79 / 0.4);
+  --sun: #ffc53d;
+  --sun-foreground: #3b2800;
+  --canvas: #f4f8f6;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -132,7 +152,8 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: #e1e8e4;
   --input: #e1e8e4;
-  --ring: oklch(0.708 0 0);
+  /* Green focus rings, so focused inputs and buttons match the brand */
+  --ring: #2fb67c;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -186,6 +207,14 @@
   --heading: #eaf2ee;
   --tint: #16301f;
   --outline-hover: #18261f;
+  --brand-from: #12865a;
+  --brand-to: #0f7a70;
+  --brand-hover-from: #17a06b;
+  --brand-hover-to: #13907f;
+  --primary-glow: rgb(47 182 124 / 0.35);
+  --sun: #ffc53d;
+  --sun-foreground: #3b2800;
+  --canvas: oklch(0.17 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
