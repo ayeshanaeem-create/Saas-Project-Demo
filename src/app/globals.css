@@ -25,6 +25,14 @@
   --color-sun-foreground: var(--sun-foreground);
   /* Page background behind cards (dashboard, demo, landing sections) */
   --color-canvas: var(--canvas);
+  /* Landing hero background and hand-drawn callouts (src/components/hero) */
+  --color-hero-mint: var(--hero-mint);
+  --color-hero-cream: var(--hero-cream);
+  --color-hero-blob-green: var(--hero-blob-green);
+  --color-hero-blob-amber: var(--hero-blob-amber);
+  --color-hero-pattern: var(--hero-pattern);
+  --color-hero-arrow: var(--hero-arrow);
+  --color-hero-note: var(--hero-note);
   /* Smallest text size: 14px at the 18px base (labels, timestamps, badges). */
   --text-xs: 0.7778rem;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -143,6 +151,16 @@
   --sun: #ffc53d;
   --sun-foreground: #3b2800;
   --canvas: #f4f8f6;
+  /* Landing hero: mint on the left, a cream glow behind the phone, two blob colours, the doodle
+     pattern (its stroke and opacity) and the callouts (arrow and note colours). */
+  --hero-mint: #e8f5ee;
+  --hero-cream: #fff4dc;
+  --hero-blob-green: rgb(47 182 124 / 0.2);
+  --hero-blob-amber: rgb(255 197 61 / 0.24);
+  --hero-pattern: #0e7a4f;
+  --hero-pattern-opacity: 0.06;
+  --hero-arrow: #0e7a4f;
+  --hero-note: #0a5c3b;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -215,6 +233,14 @@
   --sun: #ffc53d;
   --sun-foreground: #3b2800;
   --canvas: oklch(0.17 0 0);
+  --hero-mint: #10261b;
+  --hero-cream: #2a2414;
+  --hero-blob-green: rgb(47 182 124 / 0.16);
+  --hero-blob-amber: rgb(255 197 61 / 0.12);
+  --hero-pattern: #2fb67c;
+  --hero-pattern-opacity: 0.07;
+  --hero-arrow: #2fb67c;
+  --hero-note: #9fdcbd;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -302,5 +328,112 @@
   30% {
     transform: translateY(-3px);
     opacity: 1;
+  }
+}
+
+/* Landing hero (src/components/hero). Colours and the pattern opacity are the hero tokens in :root. */
+@layer components {
+  /* Mint on the left fading to white, with a warm glow behind the phone: under the text on
+     narrow screens, to the right from lg (64rem), where the hero has two columns. */
+  .hero-mesh {
+    background:
+      radial-gradient(ellipse 65% 38% at 50% 76%, var(--hero-cream), transparent 72%),
+      linear-gradient(165deg, var(--hero-mint) 0%, var(--background) 48%);
+  }
+  /* The doodle pattern is strongest behind the phone and almost gone behind the headline. */
+  .hero-pattern {
+    opacity: var(--hero-pattern-opacity);
+    mask-image: radial-gradient(ellipse 80% 42% at 50% 76%, #000 20%, rgb(0 0 0 / 0.35) 62%, rgb(0 0 0 / 0.1) 100%);
+  }
+  @media (width >= 64rem) {
+    .hero-mesh {
+      background:
+        radial-gradient(ellipse 36% 62% at 80% 52%, var(--hero-cream), transparent 72%),
+        linear-gradient(to right, var(--hero-mint) 0%, var(--background) 50%);
+    }
+    .hero-pattern {
+      mask-image: radial-gradient(ellipse 38% 72% at 80% 50%, #000 20%, rgb(0 0 0 / 0.35) 62%, rgb(0 0 0 / 0.1) 100%);
+    }
+  }
+
+  /* Blurred blobs drift slowly; they hold still for reduced motion. */
+  .hero-blob {
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-blob-a {
+      animation: hero-drift-a 26s ease-in-out infinite;
+    }
+    .hero-blob-b {
+      animation: hero-drift-b 30s ease-in-out infinite;
+    }
+    .hero-blob-c {
+      animation: hero-drift-c 22s ease-in-out infinite;
+    }
+  }
+
+  /* Callouts: the arrow draws itself (paths use pathLength=1), then its note fades in. Each
+     callout sets --annotation-delay. Without motion, everything shows at once. */
+  .hero-arrow-line,
+  .hero-arrow-head {
+    stroke-dasharray: 1 2;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-arrow-line {
+      animation: hero-draw 0.6s cubic-bezier(0.5, 0, 0.3, 1) var(--annotation-delay, 0s) both;
+    }
+    .hero-arrow-head {
+      animation: hero-draw 0.2s ease-out calc(var(--annotation-delay, 0s) + 0.55s) both;
+    }
+    .hero-annotation-note {
+      animation: hero-note-in 0.45s ease-out calc(var(--annotation-delay, 0s) + 0.7s) both;
+    }
+  }
+}
+
+@keyframes hero-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(5rem, 3rem, 0) scale(1.1);
+  }
+}
+@keyframes hero-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-4rem, 3.5rem, 0) scale(0.92);
+  }
+}
+@keyframes hero-drift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-5rem, -3rem, 0) scale(1.08);
+  }
+}
+/* From 1.05, not 1: a round cap at the very start would otherwise show as a dot before drawing. */
+@keyframes hero-draw {
+  from {
+    stroke-dashoffset: 1.05;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes hero-note-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 }

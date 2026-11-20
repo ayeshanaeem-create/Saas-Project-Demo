@@ -18,6 +18,8 @@ import { Suspense } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { BusinessCard } from "@/components/business/business-card";
+import { HeroAnnotations } from "@/components/hero/hero-annotations";
+import { HeroBackground } from "@/components/hero/hero-background";
 import { ChatPreview } from "@/components/marketing/chat-preview";
 import { buttonVariants } from "@/components/ui/button";
 import { getBusinessSummaries } from "@/lib/businesses";
@@ -87,12 +89,7 @@ export default function Home() {
 
       <main className="flex-1">
         <section className="relative isolate overflow-hidden">
-          {/* Soft colour behind the hero: a green glow top left, a warm one behind the phone. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-            <div className="absolute -top-40 -left-32 size-[32rem] rounded-full bg-tint blur-3xl" />
-            <div className="absolute top-1/3 -right-40 size-[30rem] rounded-full bg-sun/25 blur-3xl" />
-            <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom,black,transparent_85%)] bg-size-[22px_22px] opacity-70" />
-          </div>
+          <HeroBackground />
           <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1fr_auto]">
             <div className="flex max-w-xl flex-col gap-6">
               <span className="flex w-fit items-center gap-1.5 rounded-full border border-primary/20 bg-card/80 px-3 py-1 text-xs font-bold text-primary shadow-sm">
@@ -148,11 +145,13 @@ export default function Home() {
                   <span className="block text-sm font-semibold text-heading">Haircut · 5:00 PM</span>
                 </span>
               </div>
+              <HeroAnnotations />
             </div>
           </div>
         </section>
 
-        <section aria-labelledby="how-heading" className="border-y bg-canvas">
+        {/* No top border: the hero fades into this section's canvas colour. */}
+        <section aria-labelledby="how-heading" className="border-b bg-canvas">
           <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
             <SectionEyebrow>Three steps</SectionEyebrow>
             <h2 id="how-heading">How it works</h2>

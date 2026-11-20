@@ -144,6 +144,8 @@ src/
   components/
     ui/                       # shadcn-generated; add via the shadcn CLI
     brand/                    # logo.tsx: LogoMark (gradient tile) and Logo (mark + wordmark)
+    hero/                     # landing hero: hero-background (mesh, drifting blobs, doodles), annotation
+                              #   (hand-drawn arrow + note), hero-annotations (callouts per breakpoint)
     business/                 # business-card.tsx
     whatsapp/                 # simulator-provider (state), simulator-shell (phone frame + theme
                               #   toggle), status-bar, chat-list, chat-screen, chat-header,
@@ -352,7 +354,8 @@ Services, prices, hours and house rules are in the system prompt, so there are n
   - **Colours:** `primary` (#0E7A4F), `primary-hover`, `heading`, `muted-foreground`, `border`, `tint` (light green for icon backgrounds and selected states) and `outline-hover`. Use these, not `emerald-*` classes.
   - **Gradient:** `bg-linear-135 from-brand-from to-brand-to` (emerald to teal) fills solid buttons, the logo mark, active nav items, the "Booked by AI" stat and the call-to-action band. White text stays above 4.5:1 on it. Its coloured shadow uses `var(--primary-glow)`, e.g. `shadow-[0_8px_20px_-8px_var(--primary-glow)]`.
   - **Accent and canvas:** `sun` / `sun-foreground` is the warm accent for small highlights ("Most popular", hero glow, alternate feature tiles); never put white text on it. `canvas` is the tinted page background behind white cards (dashboard, demo page, landing sections).
-  - **Fonts:** Figtree for body and buttons (400–700), Bricolage Grotesque (`font-heading`) for headings (600–800, 800 for the logo wordmark).
+  - **Fonts:** Figtree for body and buttons (400–700), Bricolage Grotesque (`font-heading`) for headings (600–800, 800 for the logo wordmark). Caveat is only for the hero's handwritten callouts, loaded in `annotation.tsx` so other pages don't download it.
+  - **Landing hero** (`src/components/hero/`): colours are the `--hero-*` tokens, and the mesh, pattern mask and animations are the `.hero-*` classes in `globals.css`. The hand-drawn callouts are positioned in px from the 340px phone's edges, with one set per breakpoint in `hero-annotations.tsx` (xl: four, lg: two under the phone, md: two, below md: one note under the phone). After moving one, check 768, 1024 and 1280px, the tightest widths for their sets, and keep notes 20px or more from the screen edge. The arrows draw themselves and the blobs drift; both hold still under reduced motion. In headless screenshots, don't use `captureBeyondViewport`, which drops the animated callouts.
   - **Logo:** use `<Logo />` / `<LogoMark />` from `src/components/brand/logo.tsx` inside a link, not plain "BookMate AI" text.
   - **Base size:** `html` is 18px (`112.5%`), so rem sizes scale. `text-xs` is redefined as 14px, the smallest text allowed.
   - **Headings:** h1, h2 and h3 get their size, font and colour from the base layer, at 40–64px, 30–44px and 22px. A page heading should carry no size class. Compact headings (dashboard and demo-panel sections, booking day labels, dialog titles) set their own size.
